@@ -521,5 +521,29 @@ module Omnibus
         Ohai['kernel']['machine']
       end
     end
+
+        #
+    # Install the specified package
+    #
+    # @return [void]
+    #
+    def install(package, enablerepo)
+      if null?(enablerepo)
+        enablerepo_string = ''
+        `yum -y --disablerepo='*' --enablerepo='#{enablerepo}' install #{package}`
+      else
+        enablerepo_string = "--enablerepo='#{enablerepo}'"
+      end
+      `yum -y --disablerepo='*' #{enablerepo_string} install #{package}`
+    end
+
+    #
+    # Remove the specified package
+    #
+    # @return [void]
+    #
+    def remove(package)
+      `yum -y remove #{package}`
+    end
   end
 end

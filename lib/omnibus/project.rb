@@ -596,6 +596,31 @@ module Omnibus
     expose :runtime_dependency
 
     #
+    # Add a package that this project extends.
+    #
+    # Use this to avoid packaging many files and libraries already included by
+    # the extended project.
+    # This means that the project will rely on the extended package to be
+    # installed to behave as expected.
+    # Extending a project is similar to running `apt-get install val` before the
+    # project build, and `apt-get remove val` before the packaging
+    #
+    # @example
+    #   extends_package 'datadog-agent'
+    #
+    # @param [String] val
+    #   the name of the extended package
+    #
+    # @return [Array<String>]
+    #   the list of extended packages
+    #
+    def extends_package(package, enablerepo)
+        extended_packages << [package, enablerepo]
+        extended_packages.dup
+    end
+    expose :extends_package
+
+    #
     # Add a new exclusion pattern for a list of files or folders to exclude
     # when making the package.
     #
@@ -743,6 +768,15 @@ module Omnibus
     #
     def runtime_dependencies
       @runtime_dependencies ||= []
+    end
+
+    #
+    # The list of packages this project extends.
+    #
+    # @return [Array<String>]
+    #
+    def extended_packages
+        @extended_packages ||= []
     end
 
     #
@@ -913,6 +947,11 @@ module Omnibus
       # Cache the build order so we don't re-compute
       softwares = library.build_order
 
+      # Install any package this project extends
+      extended_packages.each do |package, enablerepo|
+        packager.install(package, enablerepo)
+      end
+
       # Download all softwares in parallel
       ThreadPool.new(Config.workers) do |pool|
         softwares.each do |software|
@@ -927,6 +966,11 @@ module Omnibus
 
       # Health check
       HealthCheck.run!(self)
+
+      # Remove any package this project extends, after the health check ran
+      extended_packages.each do |package|
+        packager.remove(package)
+      end
 
       # Package
       package_me
