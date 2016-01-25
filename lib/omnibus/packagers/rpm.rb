@@ -530,11 +530,10 @@ module Omnibus
     def install(package, enablerepo)
       if null?(enablerepo)
         enablerepo_string = ''
-        `yum -y --disablerepo='*' --enablerepo='#{enablerepo}' install #{package}`
       else
-        enablerepo_string = "--enablerepo='#{enablerepo}'"
+        enablerepo_string = "--disablerepo='*' --enablerepo='#{enablerepo}'"
       end
-      `yum -y --disablerepo='*' #{enablerepo_string} install #{package}`
+      `yum -y #{enablerepo_string} install #{package}`
     end
 
     #
