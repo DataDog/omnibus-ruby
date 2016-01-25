@@ -533,6 +533,7 @@ module Omnibus
       else
         enablerepo_string = "--disablerepo='*' --enablerepo='#{enablerepo}'"
       end
+      `yum check-update`
       `yum -y #{enablerepo_string} install #{packages}`
     end
 
