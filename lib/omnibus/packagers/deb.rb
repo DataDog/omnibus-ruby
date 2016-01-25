@@ -441,21 +441,21 @@ module Omnibus
     end
 
     #
-    # Install the specified package
+    # Install the specified packages
     #
     # @return [void]
     #
-    def install(package, _)
-      `apt-get update && apt-get install -y --force-yes #{package}`
+    def install(packages, _)
+      `apt-get update && apt-get install -y --force-yes #{packages}`
     end
 
     #
-    # Remove the specified package
+    # Remove the specified packages
     #
     # @return [void]
     #
-    def remove(package)
-      `apt-get remove -y --force-yes #{package}`
+    def remove(packages)
+      `apt-get remove -y --force-yes #{packages}`
     end
 
   end

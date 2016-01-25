@@ -596,29 +596,32 @@ module Omnibus
     expose :runtime_dependency
 
     #
-    # Add a package that this project extends.
+    # Add package(s) that this project extends.
     #
     # Use this to avoid packaging many files and libraries already included by
-    # the extended project.
-    # This means that the project will rely on the extended package to be
+    # the extended projects.
+    # This means that the project will rely on the extended packages to be
     # installed to behave as expected.
-    # Extending a project is similar to running `apt-get install val` before the
-    # project build, and `apt-get remove val` before the packaging
+    # Extending a project is similar to running `apt-get install packages` before the
+    # project build, and `apt-get purge packages` before the packaging
     #
+
     # @example
-    #   extends_package 'datadog-agent'
+    #   extends_packages 'datadog-agent dd-check-mysql' 'datadog'
     #
-    # @param [String] val
-    #   the name of the extended package
+    # @param [String] packages
+    #   the name of the extended packages
+    # @param [String] enablerepo
+    #   set if a specific repository needs to be enabled (`--enablerepo` for rpm)
     #
     # @return [Array<String>]
     #   the list of extended packages
     #
-    def extends_package(package, enablerepo)
-        extended_packages << [package, enablerepo]
+    def extends_packages(packages, enablerepo)
+        extended_packages << [packages, enablerepo]
         extended_packages.dup
     end
-    expose :extends_package
+    expose :extends_packages
 
     #
     # Add a new exclusion pattern for a list of files or folders to exclude
@@ -948,8 +951,9 @@ module Omnibus
       softwares = library.build_order
 
       # Install any package this project extends
-      extended_packages.each do |package, enablerepo|
-        packager.install(package, enablerepo)
+      extended_packages.each do |packages, enablerepo|
+        puts "installing #{packages}"
+        packager.install(packages, enablerepo)
       end
 
       # Download all softwares in parallel
@@ -968,8 +972,9 @@ module Omnibus
       HealthCheck.run!(self)
 
       # Remove any package this project extends, after the health check ran
-      extended_packages.each do |package|
-        packager.remove(package)
+      extended_packages.each do |packages, _|
+        puts "removing #{packages}"
+        packager.remove(packages)
       end
 
       # Package

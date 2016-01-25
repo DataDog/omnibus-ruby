@@ -523,17 +523,17 @@ module Omnibus
     end
 
         #
-    # Install the specified package
+    # Install the specified packages
     #
     # @return [void]
     #
-    def install(package, enablerepo)
+    def install(packages, enablerepo)
       if null?(enablerepo)
         enablerepo_string = ''
       else
         enablerepo_string = "--disablerepo='*' --enablerepo='#{enablerepo}'"
       end
-      `yum -y #{enablerepo_string} install #{package}`
+      `yum -y #{enablerepo_string} install #{packages}`
     end
 
     #
@@ -541,8 +541,8 @@ module Omnibus
     #
     # @return [void]
     #
-    def remove(package)
-      `yum -y remove #{package}`
+    def remove(packages)
+      `yum -y remove #{packages}`
     end
   end
 end
