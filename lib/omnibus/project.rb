@@ -617,7 +617,7 @@ module Omnibus
     # @return [Array<String>]
     #   the list of extended packages
     #
-    def extends_packages(packages, enablerepo)
+    def extends_packages(packages, enablerepo = NULL)
         extended_packages << [packages, enablerepo]
         extended_packages.dup
     end
@@ -952,7 +952,7 @@ module Omnibus
 
       # Install any package this project extends
       extended_packages.each do |packages, enablerepo|
-        puts "installing #{packages}"
+        log.info(log_key) { "installing #{packages}" }
         packager.install(packages, enablerepo)
       end
 
@@ -973,7 +973,7 @@ module Omnibus
 
       # Remove any package this project extends, after the health check ran
       extended_packages.each do |packages, _|
-        puts "removing #{packages}"
+        log.info(log_key) { "removing #{packages}" }
         packager.remove(packages)
       end
 

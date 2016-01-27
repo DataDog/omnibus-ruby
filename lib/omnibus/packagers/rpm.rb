@@ -527,7 +527,7 @@ module Omnibus
     #
     # @return [void]
     #
-    def install(packages, enablerepo)
+    def install(packages, enablerepo = NULL)
       if null?(enablerepo)
         enablerepo_string = ''
       else

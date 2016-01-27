@@ -445,7 +445,7 @@ module Omnibus
     #
     # @return [void]
     #
-    def install(packages, _)
+    def install(packages, _ = NULL)
       `apt-get update && apt-get install -y --force-yes #{packages}`
     end
 
