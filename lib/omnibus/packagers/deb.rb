@@ -439,5 +439,24 @@ module Omnibus
         Ohai['kernel']['machine']
       end
     end
+
+    #
+    # Install the specified packages
+    #
+    # @return [void]
+    #
+    def install(packages, _ = NULL)
+      `apt-get update && apt-get install -y --force-yes #{packages}`
+    end
+
+    #
+    # Remove the specified packages
+    #
+    # @return [void]
+    #
+    def remove(packages)
+      `apt-get remove -y --force-yes #{packages}`
+    end
+
   end
 end
