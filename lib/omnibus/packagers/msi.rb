@@ -43,9 +43,22 @@ module Omnibus
     end
 
     build do
-      # Harvest the files with heat.exe, recursively generate fragment for
-      # project directory
+      # If there are extra package files let's Harvest them hard
+      dir_refs = []
+      candle_vars = ''
+      wxs_list = ''
+      wixobj_list = ''
+      if File.directory?("#{Config.source_dir}\\OMNIBUS_EXTRA_PACKAGE_FILES")
+        # Let's collect the DirectoryRefs
+        Dir.foreach("#{Config.source_dir}\\OMNIBUS_EXTRA_PACKAGE_FILES") do |item|
+          next if item == '.' or item == '..'
+          dir_refs.push(item)
+        end
+      end
+
       Dir.chdir(staging_dir) do
+        # Harvest the files with heat.exe, recursively generate fragment for
+        # project directory
         shellout! <<-EOH.split.join(' ').squeeze(' ').strip
           heat.exe dir "#{windows_safe_path(project.install_dir)}"
             -nologo -srd -gg -cg ProjectDir
@@ -54,12 +67,33 @@ module Omnibus
             -out "project-files.wxs"
         EOH
 
+        # Let's also harvest our extras
+        dir_refs.each do |dirref|
+          shellout! <<-EOH.split.join(' ').squeeze(' ').strip
+            heat.exe dir
+              "#{windows_safe_path("#{Config.source_dir}\\OMNIBUS_EXTRA_PACKAGE_FILES\\#{dirref}")}"
+              -nologo -srd -gg -cg Extra#{dirref}
+              -dr #{dirref}
+              -var "var.Extra#{dirref}"
+              -out "extra-#{dirref}.wxs"
+          EOH
+
+          candle_vars += "-dExtra#{dirref}=\""\
+            "#{windows_safe_path("#{Config.source_dir}\\OMNIBUS_EXTRA_PACKAGE_FILES\\#{dirref}")}"\
+            "\" "
+          wxs_list += "extra-#{dirref}.wxs "
+          wixobj_list += "extra-#{dirref}.wixobj "
+        end
+
         # Compile with candle.exe
         shellout! <<-EOH.split.join(' ').squeeze(' ').strip
           candle.exe
             -nologo
             #{wix_extension_switches(wix_candle_extensions)}
-            -dProjectSourceDir="#{windows_safe_path(project.install_dir)}" "project-files.wxs"
+            -dProjectSourceDir="#{windows_safe_path(project.install_dir)}"
+            #{candle_vars}
+            "project-files.wxs"
+            #{wxs_list}
             "#{windows_safe_path(staging_dir, 'source.wxs')}"
         EOH
 
@@ -72,7 +106,7 @@ module Omnibus
             #{wix_extension_switches(wix_light_extensions)}
             -cultures:en-us
             -loc "#{windows_safe_path(staging_dir, 'localization-en-us.wxl')}"
-            project-files.wixobj source.wixobj
+            project-files.wixobj #{wixobj_list} source.wixobj
             -out "#{windows_safe_path(Config.package_dir, package_name)}"
         EOH
         shellout!(light_command, returns: [0, 204])

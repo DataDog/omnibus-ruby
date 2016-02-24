@@ -64,7 +64,7 @@ module Omnibus
         false
       else
         create_directory(File.dirname(cache_path))
-        shellout!("git --git-dir=#{cache_path} init -q")
+        shellout!("git --git-dir=\"#{cache_path}\" init -q")
         true
       end
     end
@@ -113,15 +113,15 @@ module Omnibus
       create_cache_path
       remove_git_dirs
 
-      shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} add -A -f))
+      shellout!(%Q(git --git-dir=\"#{cache_path}\" --work-tree=\"#{install_dir}\" add -A -f))
 
       begin
-        shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} commit -q -m "Backup of #{tag}"))
+        shellout!(%Q(git --git-dir=\"#{cache_path}\" --work-tree=\"#{install_dir}\" commit -q -m "Backup of #{tag}"))
       rescue CommandFailed => e
         raise unless e.message.include?('nothing to commit')
       end
 
-      shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} tag -f "#{tag}"))
+      shellout!(%Q(git --git-dir=\"#{cache_path}\" --work-tree=\"#{install_dir}\" tag -f "#{tag}"))
     end
 
     def restore
@@ -129,7 +129,7 @@ module Omnibus
 
       create_cache_path
 
-      cmd = shellout(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} tag -l "#{tag}"))
+      cmd = shellout(%Q(git --git-dir=\"#{cache_path}\" --work-tree=\"#{install_dir}\" tag -l "#{tag}"))
 
       restore_me = false
       cmd.stdout.each_line do |line|
@@ -138,7 +138,7 @@ module Omnibus
 
       if restore_me
         log.internal(log_key) { "Detected tag `#{tag}' can be restored, restoring" }
-        shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} checkout -f "#{tag}"))
+        shellout!(%Q(git --git-dir=\"#{cache_path}\" --work-tree=\"#{install_dir}\" checkout -f "#{tag}"))
         true
       else
         log.internal(log_key) { "Could not find tag `#{tag}', skipping restore" }

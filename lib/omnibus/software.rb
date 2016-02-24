@@ -550,10 +550,10 @@ module Omnibus
 
     #
     # Downloads a software license to ship with the final build.
-    # 
+    #
     # Licenses will be copied into {install_dir}/sources/{software_name}
     #
-    # @param [String] name_or_url 
+    # @param [String] name_or_url
     #   the name of the license to ship or a URL pointing to the license file.
     #
     #   Available License Names : LGPLv2, LGPLv3, PSFL, Apache, Apachev2,
@@ -562,8 +562,8 @@ module Omnibus
     # @example
     #   ship_license 'GPLv3'
     #
-    # @example 
-    #    ship_license 'http://www.r-project.org/Licenses/GPL-3' 
+    # @example
+    #    ship_license 'http://www.r-project.org/Licenses/GPL-3'
     #
     def ship_license(name_or_url)
       @ship_license
@@ -577,7 +577,7 @@ module Omnibus
     #
     # @param [String] url
     #   An URL pointing to a source code archive
-    #   
+    #
     def ship_source(url)
         @ship_source
     end
