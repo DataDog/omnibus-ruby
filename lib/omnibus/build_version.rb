@@ -42,6 +42,11 @@ module Omnibus
         new.git_describe
       end
 
+      # @see (BuildVersion#git_describe_release)
+      def git_describe_release
+        new.git_describe_release
+      end
+
       # @see (BuildVersion#semver)
       def semver
         new.semver
@@ -148,12 +153,15 @@ module Omnibus
     # It works as a patch on top of Omnibus::BuildVersion#semver.
     # Returns:
     #  - For stable builds: `semver` output
-    #  - For nightly builds: AGENT_VERSION+git.COMMITS_SINCE.GIT_SHA
-    #    (where `AGENT_VERSION` is an environment variable)
+    #  - For nightly builds: AGENT_VERSION+git.COMMITS_SINCE_RELEASE.GIT_SHA
+    #    (where `AGENT_VERSION` is an environment variable and `COMMITS_SINCE_RELEASE`
+    #     the number of commits since the latest _release_ tag)
     def dd_agent_format
       agent_version = semver
       if ENV['AGENT_VERSION'] and ENV['AGENT_VERSION'].length > 1 and agent_version.include? "git"
-        agent_version = ENV['AGENT_VERSION'] + "." + agent_version.split("+")[1]
+        agent_build_version = agent_version.split("+")[1]  # git.COMMITS_SINCE_TAG.GIT_SHA
+        agent_build_version.sub!(/git\.\d+/, "git.#{commits_since_release_tag}")  # git.COMMITS_SINCE_RELEASE.GIT_SHA
+        agent_version = ENV['AGENT_VERSION'] + "." + agent_build_version
       end
       agent_version
     end
@@ -179,6 +187,35 @@ module Omnibus
           log.warn(log_key) do
             "Could not extract version information from 'git describe'! " \
             "Setting version to 0.0.0."
+          end
+          '0.0.0'
+        end
+      end
+    end
+
+    # Generates a version string by running
+    # {https://www.kernel.org/pub/software/scm/git/docs/git-describe.html
+    # git describe} in the root of the Omnibus project.
+    #
+    # Produces a version string of the format
+    #
+    #     MOST_RECENT_RELEASE_TAG-COMMITS_SINCE-gGIT_SHA
+    #
+    # Unlike `git_describe` we use the most recent _release_ tag
+    #
+    # @example
+    #  10.16.2-319-g3561a32
+    # @return [String]
+    def git_describe_release
+      @git_describe_release ||= begin
+        cmd = shellout('git describe --tags --match "[0-9].[0-9].[0-9]"', cwd: @path)
+
+        if cmd.exitstatus == 0
+          cmd.stdout.chomp
+        else
+          log.warn(log_key) do
+            "Could not extract version information on the latest release from 'git describe'! " \
+            "Setting latest release version to 0.0.0."
           end
           '0.0.0'
         end
@@ -245,6 +282,13 @@ module Omnibus
     # Extracts the number of commits since the most recent Git tag, as
     # determined by {#git_describe}.
     #
+    # @return [Fixnum]
+    def commits_since_tag
+      commits_since_provided_tag(git_describe)
+    end
+
+    # Extracts the number of commits since the provided Git tag
+    #
     # Here are some illustrative examples:
     #
     #     1.2.7-208-ge908a52 -> 208
@@ -253,10 +297,19 @@ module Omnibus
     #     10.16.2.rc.1 -> 0
     #
     # @return [Fixnum]
-    def commits_since_tag
+    def commits_since_provided_tag(tag)
       commits_regexp = /^.*-(\d+)\-g[0-9a-f]+$/
-      match = commits_regexp.match(git_describe)
+      match = commits_regexp.match(tag)
       match ? match[1].to_i : 0
+    end
+
+
+    # Extracts the number of commits since the most recent _release_ Git tag, as
+    # determined by {#git_describe_release}
+    #
+    # @return [Fixnum]
+    def commits_since_release_tag
+      commits_since_provided_tag(git_describe_release)
     end
 
     # Indicates whether the version represents a pre-release or not, as
