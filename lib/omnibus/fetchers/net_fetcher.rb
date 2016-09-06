@@ -171,6 +171,43 @@ module Omnibus
       options['Cookie'] = source[:cookie] if source[:cookie]
 
       download_file!(download_url, downloaded_file, options)
+      options[:read_timeout] = Omnibus::Config.fetcher_read_timeout
+      fetcher_retries ||= Omnibus::Config.fetcher_retries
+
+      progress_bar = ProgressBar.create(
+        output: $stdout,
+        format: '%e %B %p%% (%r KB/sec)',
+        rate_scale: ->(rate) { rate / 1024 },
+      )
+
+      reported_total = 0
+
+      options[:content_length_proc] = ->(total) {
+        reported_total = total
+        progress_bar.total = total
+      }
+      options[:progress_proc] = ->(step) {
+        downloaded_amount = reported_total ? [step, reported_total].min : step
+        progress_bar.progress = downloaded_amount
+      }
+
+      file = open(download_url, options)
+      FileUtils.cp(file.path, downloaded_file)
+      file.close
+    rescue SocketError,
+           Errno::ECONNREFUSED,
+           Errno::ECONNRESET,
+           Errno::ENETUNREACH,
+           Timeout::Error,
+           OpenURI::HTTPError => e
+      if fetcher_retries != 0
+        log.debug(log_key) { "Retrying failed download (#{fetcher_retries})..." }
+        fetcher_retries -= 1
+        retry
+      else
+        log.error(log_key) { "Download failed - #{e.class}!" }
+        raise
+      end
     end
 
     #
