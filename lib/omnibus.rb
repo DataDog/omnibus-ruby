@@ -18,7 +18,6 @@ require 'omnibus/core_extensions'
 
 require 'cleanroom'
 require 'pathname'
-require 'json'
 
 require 'omnibus/exceptions'
 require 'omnibus/version'
@@ -62,6 +61,7 @@ module Omnibus
   autoload :Templating,       'omnibus/templating'
   autoload :ThreadPool,       'omnibus/thread_pool'
   autoload :Util,             'omnibus/util'
+  autoload :Licensing,        'omnibus/licensing'
 
   autoload :GitFetcher,  'omnibus/fetchers/git_fetcher'
   autoload :NetFetcher,  'omnibus/fetchers/net_fetcher'
@@ -111,6 +111,9 @@ module Omnibus
       end
 
       Config.reset!
+      # Clear caches on Project and Software
+      Project.reset!
+      Software.reset!
     end
 
     #

@@ -1,6 +1,92 @@
 Omnibus CHANGELOG
 =================
 
+v5.4.0 (April 18, 2016)
+-----------------------
+### New Features
+- Include license and version manifest in generated `*.metadata.json` (#656)
+- Deprecate the `--version-manifest` on `omnibus publish` (#656)
+- Create Solaris IPS package (#654)
+- Use symbolized keys for all Manifest hashes (#657)
+- Publish a package’s `*.metadata.json` to Artifactory (#664)
+- Add the build’s `LICENSE` content to `*.metadata.json` (#664)
+
+### Bug Fixes
+- Add proper support for loading v2 manifests (#657)
+- Replacing the use of JSON gem with FFI_yajl (#661)
+
+v5.3.0 (March 25, 2016)
+-----------------------
+### New Features
+
+- Get correct architecture name for Debian environments from `dpkg` (#646)
+- Update fauxhai to latest (#652)
+- Use project.license in deb and rpm packagers if available (#653)
+- Whitelist additional Solaris11 libraries (#650)
+- Use gcc 4.9 on freebsd (#649)
+- Per-Platform manifest generation (#645)
+  - Support omnibus manifest arguments: `omnibus manifest --os=OS --platform-family=FAMILY --platform=PLATFORM --platform-version=VERSION`
+  - Can be used to generate manifests for other platforms than the one you are on, allowing a multi-platform build to be quickly set up.
+  - Affects chef-sugar's `windows?`, `solaris?` and similar functions, which are used by software in `omnibus-software`
+- Performance: Ignore non-libraries in health checks (#642)
+- Add `github` source (#643)
+- Add `suse` support (#647)
+- Exclude files with whitespace names from AIX packages (#641)
+- Fix compilation problems on Windows (#640)
+  - Disable `sse` to avoid compilation segfaults
+  - Don't change newlines when `git pull`ing
+- Warn when software licenses are missing for software components (#638)
+- Add Chef MLSA to the list of recognized licenses (#639)
+- Download remote license files into the LICENSES directory (#637)
+
+v5.2.0 (March 15, 2016)
+-----------------------
+### New Features
+
+- License reporting (#635):
+  - Add `license` & `license_file` DSL methods to software.
+    - `license` (String): Sets the license of the software component.
+    - `license_file` (String): The relative path or the url of the license file of the software to be included in `"LICENSES"` directory.
+      - Can be used multiple times.
+      - You can use `:project_license` as a special value if the software is build related code and if it is using project's license.
+  - Add `license`, `license_file` and `license_file_path` DSL methods to project.
+    - `license` (String): Sets the license of the project.
+    - `license_file` (String): The relative path or the url of the license file of the project to be included in the file that will be created at project.license_file_path.
+    - `license_file_path` (String): The relative path of the main license file that will be created for the project. Default: `"LICENSE"`.
+
+  With this omnibus will:
+
+  1. Collect all the license files specified in software components into `install_dir/LICENSES` directory.
+  2. Create a license file at `install_dir/LICENSE` which will contain license of the project and license information for all the software components that are being included.
+- Ability to change `dist_tag` in RPM packager. (#634)
+- Ability to update submodules during git checkout. (#603)
+
+v5.1.0 (March 10, 2016)
+-----------------------
+### New Features
+- New `configure` dsl method. (#572)
+- New `maintainer` dsl method. (#618)
+- New `update_config_guess` dsl method. (#632)
+- Ability to enable building software components from source on windows. (#572, #583, #584, #586, #612)
+
+### Bug Fixes
+- Default to UTF-8 external encoding globally. (#573)
+- Restore invalid file names on AIX. (#575)
+- Fix bff log loop. (#579)
+- Use 7z.exe instead of tar.exe on windows. (#578)
+- Make generated package scripts old-school Unix friendly. (#582)
+- Fix directory cleanup logic in `git_fetcher`. (#509)
+- Use -O2 when building with standard compiler flags. (#591)
+- Cache software sources under `.../src/<software name>/<package>`. (#597)
+- Add libmd.so.* to freebsd whitelist. (#600)
+- Remove existing links in the destination when syncing files. (#602)
+- Skip adding DEBIAN directory to md5sums file. (#595)
+- Autoprunes files with spaces on Solaris. (#609)
+- Allow assets with non-md5 checksums to be cached in s3. (#611)
+- Print NetFetcher retries at the info level. (#614)
+- Do not modify CRLF when git caching. (#616)
+- Ensure we always swap chown back to default. (#617)
+
 v5.0.0 (November 10, 2015)
 --------------------------
 ### New Features

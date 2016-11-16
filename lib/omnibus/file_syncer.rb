@@ -41,6 +41,31 @@ module Omnibus
     end
 
     #
+    # Glob for all files under a given path/pattern, removing Ruby's
+    # dumb idea to include +'.'+ and +'..'+ as entries.
+    #
+    # @param [String] source
+    #   the path or glob pattern to get all files from
+    #
+    # @option options [String, Array<String>] :exclude
+    #   a file, folder, or globbing pattern of files to ignore when syncing
+    #
+    # @return [Array<String>]
+    #   the list of all files
+    #
+    def all_files_under(source, options = {})
+      excludes = Array(options[:exclude]).map do |exclude|
+        [exclude, "#{exclude}/*"]
+      end.flatten
+
+      source_files = glob(File.join(source, '**/*'))
+      source_files = source_files.reject do |source_file|
+        basename = relative_path_for(source_file, source)
+        excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH) }
+      end
+    end
+
+    #
     # Copy the files from +source+ to +destination+, while removing any files
     # in +destination+ that are not present in +source+.
     #
@@ -69,16 +94,7 @@ module Omnibus
           "the `copy' method instead."
       end
 
-      # Reject any files that match the excludes pattern
-      excludes = Array(options[:exclude]).map do |exclude|
-        [exclude, "#{exclude}/*"]
-      end.flatten
-
-      source_files = glob(File.join(source, '**/*'))
-      source_files = source_files.reject do |source_file|
-        basename = relative_path_for(source_file, source)
-        excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH) }
-      end
+      source_files = all_files_under(source, options)
 
       # Ensure the destination directory exists
       FileUtils.mkdir_p(destination) unless File.directory?(destination)
@@ -106,9 +122,13 @@ module Omnibus
           # duplicate them, provided their source is in place already
           if hardlink? source_stat
             if existing = hardlink_sources[[source_stat.dev, source_stat.ino]]
-              FileUtils.ln(existing, "#{destination}/#{relative_path}")
+              FileUtils.ln(existing, "#{destination}/#{relative_path}", force: true)
             else
-              FileUtils.cp(source_file, "#{destination}/#{relative_path}")
+              begin
+                FileUtils.cp(source_file, "#{destination}/#{relative_path}")
+              rescue Errno::EACCES
+                FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
+              end
               hardlink_sources.store([source_stat.dev, source_stat.ino], "#{destination}/#{relative_path}")
             end
           else
@@ -120,8 +140,7 @@ module Omnibus
             begin
               FileUtils.cp(source_file, "#{destination}/#{relative_path}")
             rescue Errno::EACCES
-              FileUtils.cp_r(source_file, "#{destination}/#{relative_path}",
-                             :remove_destination => true)
+              FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
             end
           end
         else

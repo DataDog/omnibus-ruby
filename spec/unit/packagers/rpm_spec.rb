@@ -11,11 +11,13 @@ module Omnibus
         project.build_iteration('2')
         project.maintainer('Chef Software')
         project.replace('old-project')
+        project.license(project_license) if project_license
       end
     end
 
     subject { described_class.new(project) }
 
+    let(:project_license) { nil }
     let(:project_root) { File.join(tmp_path, 'project/root') }
     let(:package_dir)  { File.join(tmp_path, 'package/dir') }
     let(:staging_dir)  { File.join(tmp_path, 'staging/dir') }
@@ -69,11 +71,19 @@ module Omnibus
       end
 
       it 'has a default value' do
-        expect(subject.license).to eq('unknown')
+        expect(subject.license).to eq('Unspecified')
       end
 
       it 'must be a string' do
         expect { subject.license(Object.new) }.to raise_error(InvalidValue)
+      end
+
+      context 'with project license' do
+        let(:project_license) { 'custom-license' }
+
+        it 'uses project license' do
+          expect(subject.license).to eq('custom-license')
+        end
       end
     end
 
@@ -105,6 +115,16 @@ module Omnibus
       end
     end
 
+    describe '#dist_tag' do
+      it 'is a DSL method' do
+        expect(subject).to have_exposed_method(:dist_tag)
+      end
+
+      it 'has a default value' do
+        expect(subject.dist_tag).to eq('.el6')
+      end
+    end
+
     describe '#id' do
       it 'is :rpm' do
         expect(subject.id).to eq(:rpm)
@@ -112,12 +132,24 @@ module Omnibus
     end
 
     describe '#package_name' do
-      before do
-        allow(subject).to receive(:safe_architecture).and_return('x86_64')
+      context 'when dist_tag is enabled' do
+        before do
+          allow(subject).to receive(:safe_architecture).and_return('x86_64')
+        end
+
+        it 'includes the name, version, and build iteration' do
+          expect(subject.package_name).to eq('project-1.2.3-2.el6.x86_64.rpm')
+        end
       end
 
-      it 'includes the name, version, and build iteration' do
-        expect(subject.package_name).to eq('project-1.2.3-2.el6.x86_64.rpm')
+      context 'when dist_tag is disabled' do
+        before do
+          allow(subject).to receive(:dist_tag).and_return(false)
+        end
+
+        it 'excludes dist tag' do
+          expect(subject.package_name).to eq('project-1.2.3-2.x86_64.rpm')
+        end
       end
     end
 
@@ -151,7 +183,7 @@ module Omnibus
         expect(contents).to include("BuildRoot: %buildroot")
         expect(contents).to include("Prefix: /")
         expect(contents).to include("Group: default")
-        expect(contents).to include("License: unknown")
+        expect(contents).to include("License: Unspecified")
         expect(contents).to include("Vendor: Omnibus <omnibus@getchef.com>")
         expect(contents).to include("URL: https://example.com")
         expect(contents).to include("Packager: Chef Software")
@@ -254,6 +286,20 @@ module Omnibus
           expect(contents).not_to include("BuildArch")
         end
       end
+
+      context 'when dist_tag is disabled' do
+        let(:spec_file) { "#{staging_dir}/SPECS/project-1.2.3-2.x86_64.rpm.spec" }
+
+        before do
+          allow(subject).to receive(:dist_tag).and_return(false)
+        end
+
+        it 'has the correct release' do
+          subject.write_rpm_spec
+          contents = File.read(spec_file)
+          expect(contents).to include("Release: 2")
+        end
+      end
     end
 
     describe '#create_rpm_file' do
@@ -316,12 +362,6 @@ module Omnibus
 
       it 'escapes %' do
         expect(subject.rpm_safe('%foo')).to eq('[%]foo')
-      end
-    end
-
-    describe '#dist_tag' do
-      it 'returns the Fedora packaging guidelines dist tag for the package' do
-        expect(subject.dist_tag).to eq('.el6')
       end
     end
 

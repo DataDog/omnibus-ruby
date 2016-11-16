@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-require 'json'
+require 'ffi_yajl'
 
 module Omnibus
   class Manifest
@@ -24,18 +24,20 @@ module Omnibus
 
     include Logging
 
-    LATEST_MANIFEST_FORMAT = 1
+    LATEST_MANIFEST_FORMAT = 2
 
-    attr_reader :build_version, :build_git_revision
-    def initialize(version=nil, git_rev=nil)
+    attr_reader :build_version, :build_git_revision, :license
+    def initialize(version=nil, git_rev=nil, license="Unspecified")
       @data = {}
       @build_version = version
       @build_git_revision = git_rev
+      @license = license
     end
 
     def entry_for(name)
-      if @data.key?(name)
-        @data[name]
+      name_sym = name.to_sym
+      if @data.key?(name_sym)
+        @data[name_sym]
       else
         raise MissingManifestEntry, "No manifest entry found for #{name}"
       end
@@ -46,11 +48,12 @@ module Omnibus
         raise NotAManifestEntry, "#{entry} is not an Omnibus:ManifestEntry"
       end
 
-      if @data.key?(name)
+      name_sym = name.to_sym
+      if @data.key?(name_sym)
         log.warn(log_key) { "Overritting existing manifest entry for #{name}" }
       end
 
-      @data[name] = entry
+      @data[name_sym] = entry
       self
     end
 
@@ -70,11 +73,12 @@ module Omnibus
         memo
       end
       ret = {
-        'manifest_format' => LATEST_MANIFEST_FORMAT,
-        'software' => software_hash
+        manifest_format: LATEST_MANIFEST_FORMAT,
+        software: software_hash
       }
-      ret['build_version'] = build_version if build_version
-      ret['build_git_revision'] = build_git_revision if build_git_revision
+      ret[:build_version] = build_version if build_version
+      ret[:build_git_revision] = build_git_revision if build_git_revision
+      ret[:license] = license
       ret
     end
 
@@ -84,7 +88,7 @@ module Omnibus
     # @return [String]
     #
     def to_json
-      JSON.pretty_generate(to_hash)
+      FFI_Yajl::Encoder.encode(to_hash, pretty: true)
     end
 
     #
@@ -92,24 +96,36 @@ module Omnibus
     #
 
     def self.from_hash(manifest_data)
-      case manifest_data['manifest_format'].to_i
+      case manifest_data[:manifest_format].to_i
       when 1
         from_hash_v1(manifest_data)
+      when 2
+        from_hash_v2(manifest_data)
       else
-        raise InvalidManifestFormat, "Unknown manifest format version: #{manifest_data['manifest_format']}"
+        raise InvalidManifestFormat, "Unknown manifest format version: #{manifest_data[:manifest_format]}"
       end
     end
 
     def self.from_hash_v1(manifest_data)
-      m = Omnibus::Manifest.new(manifest_data['build_version'], manifest_data['build_git_revision'])
-      manifest_data['software'].each do |name, entry_data|
+      m = Omnibus::Manifest.new(manifest_data[:build_version], manifest_data[:build_git_revision])
+      manifest_data[:software].each do |name, entry_data|
+        m.add(name, Omnibus::ManifestEntry.new(name, keys_to_syms(entry_data)))
+      end
+      m
+    end
+
+    def self.from_hash_v2(manifest_data)
+      m = Omnibus::Manifest.new(manifest_data[:build_version], manifest_data[:build_git_revision], manifest_data[:license])
+      manifest_data[:software].each do |name, entry_data|
         m.add(name, Omnibus::ManifestEntry.new(name, keys_to_syms(entry_data)))
       end
       m
     end
 
     def self.from_file(filename)
-      from_hash(JSON.parse(File.read(File.expand_path(filename))))
+      data = File.read(File.expand_path(filename))
+      hash = FFI_Yajl::Parser.parse(data, symbolize_names: true)
+      from_hash(hash)
     end
 
     private

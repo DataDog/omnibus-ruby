@@ -16,6 +16,7 @@
 
 require 'thor'
 require 'omnibus'
+require "ffi_yajl"
 
 module Omnibus
   class CLI < Command::Base
@@ -85,7 +86,7 @@ module Omnibus
       if @options[:output_manifest]
         FileUtils.mkdir_p('pkg')
         File.open(::File.join('pkg', 'version-manifest.json'), 'w') do |f|
-          f.write(project.built_manifest.to_json)
+          f.write(FFI_Yajl::Encoder.encode(project.built_manifest.to_hash))
         end
       end
     end
@@ -99,9 +100,29 @@ module Omnibus
     #
     #   $ omnibus manifest PROJECT
     #
+    method_option :os,
+      desc: "An os name in Ohai form. Defaults to the current os.",
+      type: :string
+    method_option :platform_family,
+      desc: "A platform family string in Ohai form. Defaults to the current platform_family.",
+      type: :string
+    method_option :platform,
+      desc: "A platform string in Ohai form. Defaults to the current platform.",
+      type: :string
+    method_option :platform_version,
+      desc: "A platform version string in Ohai form. Defaults to the current platform.",
+      type: :string
+    method_option :architecture,
+      desc: "The target architecture: x86, x64, powerpc. Defaults to the current architecture."
     desc 'manifest PROJECT', 'Print a manifest for the given Omnibus project'
     def manifest(name)
-      puts JSON.pretty_generate(Project.load(name).built_manifest.to_hash)
+      # Override ohai information
+      Ohai['os'] = @options[:os] if @options[:os]
+      Ohai['platform_family'] = @options[:platform_family] if @options[:platform_family]
+      Ohai['platform'] = @options[:platform] if @options[:platform]
+      Ohai['platform_version'] = @options[:platform_version] if @options[:platform_version]
+      Ohai['kernel']['machine'] = @options[:architecture] if @options[:architecture]
+      puts FFI_Yajl::Encoder.encode(Project.load(name).built_manifest.to_hash, pretty: true)
     end
 
     #

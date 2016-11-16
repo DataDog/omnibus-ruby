@@ -9,23 +9,38 @@ module Omnibus
       end
     end
 
+    let(:source) do
+      {
+        url: 'http://example.com/',
+        md5: 'abcd1234'
+      }
+    end
+
+    let(:rel_path) { 'software' }
+
     subject do
+      local_source = source
+      local_rel_path = rel_path
+
       described_class.new(project).evaluate do
         name 'software'
         default_version '1.2.3'
 
-        source url: 'http://example.com/',
-               md5: 'abcd1234'
+        source local_source
+        relative_path local_rel_path
       end
     end
 
     it_behaves_like 'a cleanroom getter', :project
     it_behaves_like 'a cleanroom setter', :name, %|name 'libxml2'|
     it_behaves_like 'a cleanroom setter', :description, %|description 'The XML magician'|
+    it_behaves_like 'a cleanroom setter', :maintainer, %|maintainer 'Captain Jack <sparrow@chef.io>'|
     it_behaves_like 'a cleanroom setter', :dependency, %|dependency 'libxslt'|
     it_behaves_like 'a cleanroom setter', :source, %|source url: 'https://source.example.com'|
     it_behaves_like 'a cleanroom setter', :default_version, %|default_version '1.2.3'|
     it_behaves_like 'a cleanroom setter', :version, %|version '1.2.3'|
+    it_behaves_like 'a cleanroom setter', :license, %|license 'Apache 2.0'|
+    it_behaves_like 'a cleanroom setter', :license_file, %|license_file 'LICENSES/artistic.txt'|
     it_behaves_like 'a cleanroom setter', :whitelist_file, %|whitelist_file '/opt/whatever'|
     it_behaves_like 'a cleanroom setter', :relative_path, %|relative_path '/path/to/extracted'|
     it_behaves_like 'a cleanroom setter', :build, %|build {}|
@@ -43,6 +58,12 @@ module Omnibus
       it_behaves_like 'a cleanroom getter', :project_file
     end
 
+    context 'when no license is present' do
+      it "sets the defaults" do
+        expect(subject.license).to eq ('Unspecified')
+      end
+    end
+
     describe "with_standard_compiler_flags helper" do
       context "on ubuntu" do
         before { stub_ohai(platform: 'ubuntu', version: '12.04') }
@@ -50,9 +71,9 @@ module Omnibus
         it "sets the defaults" do
           expect(subject.with_standard_compiler_flags).to eq(
             'LDFLAGS'         => '-Wl,-rpath,/opt/project/embedded/lib -L/opt/project/embedded/lib',
-            'CFLAGS'          => '-I/opt/project/embedded/include',
-            'CXXFLAGS'        => '-I/opt/project/embedded/include',
-            'CPPFLAGS'        => '-I/opt/project/embedded/include',
+            'CFLAGS'          => '-I/opt/project/embedded/include -O2',
+            'CXXFLAGS'        => '-I/opt/project/embedded/include -O2',
+            'CPPFLAGS'        => '-I/opt/project/embedded/include -O2',
             'LD_RUN_PATH'     => '/opt/project/embedded/lib',
             'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
           )
@@ -60,9 +81,9 @@ module Omnibus
         it 'overrides LDFLAGS' do
           expect(subject.with_standard_compiler_flags('LDFLAGS'        => 'foo')).to eq(
             'LDFLAGS'         => '-Wl,-rpath,/opt/project/embedded/lib -L/opt/project/embedded/lib',
-            'CFLAGS'          => '-I/opt/project/embedded/include',
-            'CXXFLAGS'        => '-I/opt/project/embedded/include',
-            'CPPFLAGS'        => '-I/opt/project/embedded/include',
+            'CFLAGS'          => '-I/opt/project/embedded/include -O2',
+            'CXXFLAGS'        => '-I/opt/project/embedded/include -O2',
+            'CPPFLAGS'        => '-I/opt/project/embedded/include -O2',
             'LD_RUN_PATH'     => '/opt/project/embedded/lib',
             'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
           )
@@ -70,9 +91,9 @@ module Omnibus
         it 'overrides CFLAGS' do
           expect(subject.with_standard_compiler_flags('CFLAGS'=>'foo')).to eq(
             'LDFLAGS'         => '-Wl,-rpath,/opt/project/embedded/lib -L/opt/project/embedded/lib',
-            'CFLAGS'          => '-I/opt/project/embedded/include',
-            'CXXFLAGS'        => '-I/opt/project/embedded/include',
-            'CPPFLAGS'        => '-I/opt/project/embedded/include',
+            'CFLAGS'          => '-I/opt/project/embedded/include -O2',
+            'CXXFLAGS'        => '-I/opt/project/embedded/include -O2',
+            'CPPFLAGS'        => '-I/opt/project/embedded/include -O2',
             'LD_RUN_PATH'     => '/opt/project/embedded/lib',
             'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
           )
@@ -80,9 +101,9 @@ module Omnibus
         it 'overrides CXXFLAGS' do
           expect(subject.with_standard_compiler_flags('CXXFLAGS'=>'foo')).to eq(
             'LDFLAGS'         => '-Wl,-rpath,/opt/project/embedded/lib -L/opt/project/embedded/lib',
-            'CFLAGS'          => '-I/opt/project/embedded/include',
-            'CXXFLAGS'        => '-I/opt/project/embedded/include',
-            'CPPFLAGS'        => '-I/opt/project/embedded/include',
+            'CFLAGS'          => '-I/opt/project/embedded/include -O2',
+            'CXXFLAGS'        => '-I/opt/project/embedded/include -O2',
+            'CPPFLAGS'        => '-I/opt/project/embedded/include -O2',
             'LD_RUN_PATH'     => '/opt/project/embedded/lib',
             'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
           )
@@ -90,9 +111,9 @@ module Omnibus
         it 'overrides CPPFLAGS' do
           expect(subject.with_standard_compiler_flags('CPPFLAGS'=>'foo')).to eq(
             'LDFLAGS'         => '-Wl,-rpath,/opt/project/embedded/lib -L/opt/project/embedded/lib',
-            'CFLAGS'          => '-I/opt/project/embedded/include',
-            'CXXFLAGS'        => '-I/opt/project/embedded/include',
-            'CPPFLAGS'        => '-I/opt/project/embedded/include',
+            'CFLAGS'          => '-I/opt/project/embedded/include -O2',
+            'CXXFLAGS'        => '-I/opt/project/embedded/include -O2',
+            'CPPFLAGS'        => '-I/opt/project/embedded/include -O2',
             'LD_RUN_PATH'     => '/opt/project/embedded/lib',
             'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
           )
@@ -101,18 +122,67 @@ module Omnibus
           expect(subject.with_standard_compiler_flags('numberwang'=>4)).to eq(
             'numberwang'      => 4,
             'LDFLAGS'         => '-Wl,-rpath,/opt/project/embedded/lib -L/opt/project/embedded/lib',
-            'CFLAGS'          => '-I/opt/project/embedded/include',
-            'CXXFLAGS'        => '-I/opt/project/embedded/include',
-            'CPPFLAGS'        => '-I/opt/project/embedded/include',
+            'CFLAGS'          => '-I/opt/project/embedded/include -O2',
+            'CXXFLAGS'        => '-I/opt/project/embedded/include -O2',
+            'CPPFLAGS'        => '-I/opt/project/embedded/include -O2',
             'LD_RUN_PATH'     => '/opt/project/embedded/lib',
             'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
           )
         end
       end
 
-      context 'on solaris2' do
+      context 'on solaris_11' do
+              before do
+                stub_ohai(platform: 'solaris2', version: '5.11') do |data|
+                  # For some reason, this isn't set in Fauxhai
+                  data['platform'] = 'solaris2'
+                end
+              end
+
+              it 'sets the defaults' do
+                expect(subject.with_standard_compiler_flags).to eq(
+                  "CC"              => "gcc -m64 -static-libgcc",
+                  "CFLAGS"          => "-I/opt/project/embedded/include -O2",
+                  "CPPFLAGS"        => "-I/opt/project/embedded/include -O2",
+                  "CXXFLAGS"        => "-I/opt/project/embedded/include -O2",
+                  "LDFLAGS"         => "-Wl,-rpath,/opt/project/embedded/lib -L/opt/project/embedded/lib -static-libgcc",
+                  "LD_OPTIONS"      => "-R/opt/project/embedded/lib",
+                  "LD_RUN_PATH"     => "/opt/project/embedded/lib",
+                  "PKG_CONFIG_PATH" => "/opt/project/embedded/lib/pkgconfig"
+                )
+              end
+
+              context 'when loader mapping file is specified' do
+                # Let the unit tests run on windows where auto-path translation occurs.
+                let(:project_root) { File.join(tmp_path, '/root/project') }
+                before do
+                  stub_ohai(platform: 'solaris2', version: '5.11') do |data|
+                    # For some reason, this isn't set in Fauxhai
+                    data['platform'] = 'solaris2'
+                  end
+                  Config.project_root(project_root)
+                  Config.solaris_linker_mapfile('files/mapfile/solaris')
+                  allow(File).to receive(:exist?).and_return(true)
+                end
+
+                it 'sets LD_OPTIONS correctly' do
+                  expect(subject.with_standard_compiler_flags).to eq(
+                    "CC"              => "gcc -m64 -static-libgcc",
+                    "CFLAGS"          => "-I/opt/project/embedded/include -O2",
+                    "CPPFLAGS"        => "-I/opt/project/embedded/include -O2",
+                    "CXXFLAGS"        => "-I/opt/project/embedded/include -O2",
+                    "LDFLAGS"         => "-Wl,-rpath,/opt/project/embedded/lib -L/opt/project/embedded/lib -static-libgcc",
+                    "LD_OPTIONS"      => "-R/opt/project/embedded/lib",
+                    "LD_RUN_PATH"     => "/opt/project/embedded/lib",
+                    "PKG_CONFIG_PATH" => "/opt/project/embedded/lib/pkgconfig"
+                  )
+                end
+              end
+            end
+
+      context 'on solaris_10' do
         before do
-          stub_ohai(platform: 'solaris2', version: '5.11') do |data|
+          stub_ohai(platform: 'solaris2', version: '5.10') do |data|
             # For some reason, this isn't set in Fauxhai
             data['platform'] = 'solaris2'
           end
@@ -135,7 +205,7 @@ module Omnibus
           # Let the unit tests run on windows where auto-path translation occurs.
           let(:project_root) { File.join(tmp_path, '/root/project') }
           before do
-            stub_ohai(platform: 'solaris2', version: '5.11') do |data|
+            stub_ohai(platform: 'solaris2', version: '5.10') do |data|
               # For some reason, this isn't set in Fauxhai
               data['platform'] = 'solaris2'
             end
@@ -165,9 +235,9 @@ module Omnibus
         it 'sets the defaults' do
           expect(subject.with_standard_compiler_flags).to eq(
             'LDFLAGS'         => '-L/opt/project/embedded/lib',
-            'CFLAGS'          => '-I/opt/project/embedded/include',
-            "CXXFLAGS"        => "-I/opt/project/embedded/include",
-            "CPPFLAGS"        => "-I/opt/project/embedded/include",
+            'CFLAGS'          => '-I/opt/project/embedded/include -O2',
+            "CXXFLAGS"        => "-I/opt/project/embedded/include -O2",
+            "CPPFLAGS"        => "-I/opt/project/embedded/include -O2",
             'LD_RUN_PATH'     => '/opt/project/embedded/lib',
             'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
           )
@@ -199,37 +269,118 @@ module Omnibus
         end
       end
 
-      context 'on freebsd' do
+      context 'on freebsd 9' do
         before do
           stub_ohai(platform: 'freebsd', version: '9.2')
         end
 
         it 'sets the defaults' do
           expect(subject.with_standard_compiler_flags).to eq(
-            'CFLAGS'  => '-I/opt/project/embedded/include',
-            'CXXFLAGS'  => '-I/opt/project/embedded/include',
-            'CPPFLAGS'  => '-I/opt/project/embedded/include',
+            'CFLAGS'  => '-I/opt/project/embedded/include -O2',
+            'CXXFLAGS'  => '-I/opt/project/embedded/include -O2',
+            'CPPFLAGS'  => '-I/opt/project/embedded/include -O2',
             'LDFLAGS' => '-L/opt/project/embedded/lib',
             'LD_RUN_PATH' => '/opt/project/embedded/lib',
             'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig',
           )
         end
 
-        context 'on freebsd' do
+        context 'with gcc 4.9 installed' do
           before do
-            stub_ohai(platform: 'freebsd', version: '10.0')
+            allow(subject).to receive(:which).and_return('/usr/local/bin/gcc49')
           end
 
-          it 'Clang as the default compiler' do
+          it 'sets the compiler args' do
             expect(subject.with_standard_compiler_flags).to eq(
-              'CC'              => 'clang',
-              'CXX'             => 'clang++',
-              'CFLAGS'          => '-I/opt/project/embedded/include',
-              'CXXFLAGS'        => '-I/opt/project/embedded/include',
-              'CPPFLAGS'        => '-I/opt/project/embedded/include',
-              'LDFLAGS'         => '-L/opt/project/embedded/lib',
+              'CC'              => 'gcc49',
+              'CXX'             => 'g++49',
+              'CFLAGS'  => '-I/opt/project/embedded/include -O2',
+              'CXXFLAGS'  => '-I/opt/project/embedded/include -O2',
+              'CPPFLAGS'  => '-I/opt/project/embedded/include -O2',
+              'LDFLAGS' => '-L/opt/project/embedded/lib',
+              'LD_RUN_PATH' => '/opt/project/embedded/lib',
+              'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig',            )
+          end
+        end
+      end
+
+      context 'on freebsd 10' do
+        before do
+          stub_ohai(platform: 'freebsd', version: '10.0')
+        end
+
+        it 'Clang as the default compiler' do
+          expect(subject.with_standard_compiler_flags).to eq(
+            'CC'              => 'clang',
+            'CXX'             => 'clang++',
+            'CFLAGS'          => '-I/opt/project/embedded/include -O2',
+            'CXXFLAGS'        => '-I/opt/project/embedded/include -O2',
+            'CPPFLAGS'        => '-I/opt/project/embedded/include -O2',
+            'LDFLAGS'         => '-L/opt/project/embedded/lib',
+            'LD_RUN_PATH'     => '/opt/project/embedded/lib',
+            'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig',
+          )
+        end
+      end
+
+      context 'on Windows' do
+        let(:win_arch_i386) { true }
+
+        before do
+          stub_ohai(platform: 'windows', version: '2012')
+          allow(subject).to receive(:windows_arch_i386?).and_return(win_arch_i386)
+        end
+
+        context 'in 32-bit mode' do
+          it 'sets the default' do
+            expect(subject.with_standard_compiler_flags).to eq(
+              'CFLAGS'          => '-I/opt/project/embedded/include -m32 -O3 -march=i686',
+              'CXXFLAGS'        => '-I/opt/project/embedded/include -m32 -O3 -march=i686',
+              'CPPFLAGS'        => '-I/opt/project/embedded/include -m32 -O3 -march=i686',
+              'LDFLAGS'         => '-L/opt/project/embedded/lib -m32',
               'LD_RUN_PATH'     => '/opt/project/embedded/lib',
-              'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig',
+              'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
+            )
+          end
+
+          it 'sets BFD flags if requested' do
+            expect(subject.with_standard_compiler_flags({}, bfd_flags: true)).to eq(
+              'CFLAGS'          => '-I/opt/project/embedded/include -m32 -O3 -march=i686',
+              'CXXFLAGS'        => '-I/opt/project/embedded/include -m32 -O3 -march=i686',
+              'CPPFLAGS'        => '-I/opt/project/embedded/include -m32 -O3 -march=i686',
+              'LDFLAGS'         => '-L/opt/project/embedded/lib -m32',
+              'RCFLAGS'         => '--target=pe-i386',
+              'ARFLAGS'         => '--target=pe-i386',
+              'LD_RUN_PATH'     => '/opt/project/embedded/lib',
+              'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
+            )
+          end
+        end
+
+        context 'in 64-bit mode' do
+          let(:win_arch_i386) { false }
+
+          it 'sets the default' do
+            expect(subject.with_standard_compiler_flags).to eq(
+              'CFLAGS'          => '-I/opt/project/embedded/include -m64 -O3 -march=x86-64',
+              'CXXFLAGS'        => '-I/opt/project/embedded/include -m64 -O3 -march=x86-64',
+              'CPPFLAGS'        => '-I/opt/project/embedded/include -m64 -O3 -march=x86-64',
+              'LDFLAGS'         => '-L/opt/project/embedded/lib -m64',
+              'LD_RUN_PATH'     => '/opt/project/embedded/lib',
+              'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
+            )
+          end
+
+          it 'sets BFD flags if requested' do
+            expect(subject.with_standard_compiler_flags({}, bfd_flags: true)).to eq(
+              'CFLAGS'          => '-I/opt/project/embedded/include -m64 -O3 -march=x86-64',
+              'CXXFLAGS'        => '-I/opt/project/embedded/include -m64 -O3 -march=x86-64',
+              'CPPFLAGS'        => '-I/opt/project/embedded/include -m64 -O3 -march=x86-64',
+              'LDFLAGS'         => '-L/opt/project/embedded/lib -m64',
+              'RCFLAGS'         => '--target=pe-x86-64',
+              'ARFLAGS'         => '--target=pe-x86-64',
+              'LD_RUN_PATH'     => '/opt/project/embedded/lib',
+              'PKG_CONFIG_PATH' => '/opt/project/embedded/lib/pkgconfig'
             )
           end
         end
@@ -273,6 +424,12 @@ module Omnibus
           )
         end
 
+        it 'with_embedded_path ignores option to add msys to path' do
+          expect(subject.with_embedded_path({}, msys: true)).to eq(
+            'PATH' => prepended_path
+          )
+        end
+
         it 'prepends multiple paths to PATH' do
           expect(subject.prepend_path('/foo/bar', '/foo/baz')).to eq(
             ['/foo/bar', separator, '/foo/baz', separator, path].join
@@ -288,6 +445,10 @@ module Omnibus
         let(:separator) { ';' }
         let(:path) { 'c:/Ruby193/bin;c:/Windows/system32;c:/Windows;c:/Windows/System32/Wbem' }
         let(:install_dir) { 'c:/opt/project' }
+        let(:prepended_path_msys) do
+          [ "#{install_dir}/bin", separator, "#{install_dir}/embedded/bin", separator,
+            "#{install_dir}/embedded/msys/1.0/bin", separator, path].join
+        end
 
         context '`Path` exists in the environment' do
           before do
@@ -306,11 +467,19 @@ module Omnibus
           before do
             allow(ENV).to receive(:keys).and_return(['PATH'])
           end
+
           it 'returns a path key of `PATH`' do
             expect(subject.with_embedded_path).to eq(
               'PATH' => prepended_path
             )
           end
+
+          it 'with_embedded_path accepts option to add msys to path' do
+            expect(subject.with_embedded_path({}, msys: true)).to eq(
+              'PATH' => prepended_path_msys
+            )
+          end
+
         end
       end
     end
@@ -336,7 +505,7 @@ module Omnibus
       let(:manifest_entry) {Omnibus::ManifestEntry.new("software", {locked_version: "1.2.8", locked_source: a_source})}
       let(:manifest) do
         m = Omnibus::Manifest.new
-        m.add("software", manifest_entry)
+        m.add(:software, manifest_entry)
       end
 
       let(:project_with_manifest) do
@@ -444,6 +613,188 @@ module Omnibus
             expect(subject.source).to eq(source)
           end
         end
+      end
+    end
+
+    context 'when software source is a github spec' do
+      let(:source) do
+        {
+          github: 'chef/ohai'
+        }
+      end
+
+      it 'fetches from a fully expanded git path' do
+        expect(subject.source).to eq(git: "https://github.com/chef/ohai.git")
+        expect(Omnibus::Fetcher).to receive(:resolve_version).with("1.2.3", git: "https://github.com/chef/ohai.git").and_return("1.2.8")
+        subject.send(:fetcher)
+      end
+
+      context 'and override source is a git spec' do
+        before { project.override(:software, source: { git: "https://blah.com/git.git" }) }
+
+        it 'fetches from the override path' do
+          expect(subject.source).to eq(git: "https://blah.com/git.git")
+          expect(Omnibus::Fetcher).to receive(:resolve_version).with("1.2.3", git: "https://blah.com/git.git").and_return("1.2.8")
+          subject.send(:fetcher)
+        end
+      end
+
+      context 'and override source is a github spec' do
+        before { project.override(:software, source: { github: "a/b" }) }
+
+        it 'fetches from the override path' do
+          expect(subject.source).to eq(git: "https://github.com/a/b.git")
+          expect(Omnibus::Fetcher).to receive(:resolve_version).with("1.2.3", git: "https://github.com/a/b.git").and_return("1.2.8")
+          subject.send(:fetcher)
+        end
+      end
+    end
+
+    context 'when software source is a git spec' do
+      let(:source) do
+        {
+          git: "https://blah.com/git.git"
+        }
+      end
+
+      it 'fetches from the git spec' do
+        expect(subject.source).to eq(git: "https://blah.com/git.git")
+        expect(Omnibus::Fetcher).to receive(:resolve_version).with("1.2.3", git: "https://blah.com/git.git").and_return("1.2.8")
+        subject.send(:fetcher)
+      end
+
+      context 'and override source is a github spec' do
+        before { project.override(:software, source: { github: "a/b" }) }
+
+        it 'fetches from the override path' do
+          expect(subject.source).to eq(git: "https://github.com/a/b.git")
+          expect(Omnibus::Fetcher).to receive(:resolve_version).with("1.2.3", git: "https://github.com/a/b.git").and_return("1.2.8")
+          subject.send(:fetcher)
+        end
+      end
+    end
+
+    describe '#fetcher' do
+      before do
+        expect(Omnibus::Fetcher).to receive(:resolve_version).with("1.2.3", source).and_return("1.2.8")
+      end
+
+      context 'when given a source url to an archive' do
+        let(:source) do
+          {
+            url: 'http://example.com/foo.tar.gz',
+            md5: 'abcd1234'
+          }
+        end
+
+        context 'when relative_path is the same as name' do
+          let(:rel_path) { 'software' }
+
+          it 'ignores back-compat and leaves fetch_dir alone' do
+            subject.send(:fetcher)
+            expect(subject.project_dir).to eq(File.expand_path("#{Config.source_dir}/software/software"))
+          end
+
+          it 'sets the fetcher project_dir to fetch_dir' do
+            expect(subject.send(:fetcher).project_dir).to eq(File.expand_path("#{Config.source_dir}/software"))
+          end
+        end
+
+        context 'when relative_path is different from name' do
+          let(:rel_path) { 'foo' }
+
+          it 'ignores back-compat and leaves fetch_dir alone' do
+            subject.send(:fetcher)
+            expect(subject.project_dir).to eq(File.expand_path("#{Config.source_dir}/software/foo"))
+          end
+
+          it 'sets the fetcher project_dir to fetch_dir' do
+            expect(subject.send(:fetcher).project_dir).to eq(File.expand_path("#{Config.source_dir}/software"))
+          end
+        end
+      end
+
+      context 'when given source url is not an archive' do
+        let(:source) do
+          {
+            url: 'http://example.com/foo.txt',
+            md5: 'abcd1234'
+          }
+        end
+
+        context 'when relative_path is the same as name' do
+          let(:rel_path) { 'software' }
+
+          it 'for back-compat, changes fetch_dir' do
+            subject.send(:fetcher)
+            expect(subject.project_dir).to eq(File.expand_path("#{Config.source_dir}/software/software"))
+          end
+
+          it 'sets the fetcher project_dir to project_dir' do
+            expect(subject.send(:fetcher).project_dir).to eq(File.expand_path("#{Config.source_dir}/software/software"))
+          end
+        end
+
+        context 'when relative_path is different from name' do
+          let(:rel_path) { 'foo' }
+
+          it 'ignores back-compat and leaves fetch_dir alone' do
+            subject.send(:fetcher)
+            expect(subject.project_dir).to eq(File.expand_path("#{Config.source_dir}/software/foo"))
+          end
+
+          it 'sets the fetcher project_dir to project_dir' do
+            expect(subject.send(:fetcher).project_dir).to eq(File.expand_path("#{Config.source_dir}/software/foo"))
+          end
+        end
+      end
+
+      context 'when given source is a git repo' do
+        let(:source) do
+          {
+            git: 'http://example.com/my/git/repo',
+          }
+        end
+
+        context 'when relative_path is the same as name' do
+          let(:rel_path) { 'software' }
+
+          it 'for back-compat, changes fetch_dir' do
+            subject.send(:fetcher)
+            expect(subject.project_dir).to eq(File.expand_path("#{Config.source_dir}/software/software"))
+          end
+
+          it 'sets the fetcher project_dir to project_dir' do
+            expect(subject.send(:fetcher).project_dir).to eq(File.expand_path("#{Config.source_dir}/software/software"))
+          end
+        end
+
+        context 'when relative_path is different from name' do
+          let(:rel_path) { 'foo' }
+
+          it 'ignores back-compat and leaves fetch_dir alone' do
+            subject.send(:fetcher)
+            expect(subject.project_dir).to eq(File.expand_path("#{Config.source_dir}/software/foo"))
+          end
+
+          it 'sets the fetcher project_dir to project_dir' do
+            expect(subject.send(:fetcher).project_dir).to eq(File.expand_path("#{Config.source_dir}/software/foo"))
+          end
+        end
+      end
+    end
+
+    describe "#canonicalize_source" do
+      it 'canonicalize_source(github: "chef/chef") yields git: "https://github.com/chef/chef.git"' do
+        expect(subject.send(:canonicalize_source, github: "chef/chef")).to eq(git: "https://github.com/chef/chef.git")
+      end
+      it 'canonicalize_source(github: "chef/chef", submodules: true) yields git: "https://github.com/chef/chef.git", submodules: true' do
+        expect(subject.send(:canonicalize_source, github: "chef/chef", submodules: true)).to eq(git: "https://github.com/chef/chef.git", submodules: true)
+      end
+      it 'canonicalize_source does not overwrite the original' do
+        original = { github: "chef/chef", submodules: true }
+        expect(subject.send(:canonicalize_source, original)).to eq(git: "https://github.com/chef/chef.git", submodules: true)
+        expect(original).to eq(github: "chef/chef", submodules: true)
       end
     end
 

@@ -16,7 +16,7 @@
 #
 
 require 'time'
-require 'json'
+require 'ffi_yajl'
 require 'omnibus/manifest'
 require 'omnibus/manifest_entry'
 require 'omnibus/reports'
@@ -47,6 +47,13 @@ module Omnibus
           instance.load_dependencies
           instance
         end
+      end
+
+      #
+      # Reset cached project information.
+      #
+      def reset!
+        @loaded_projects = nil
       end
 
       private
@@ -199,7 +206,7 @@ module Omnibus
 
     #
     # Path to the +/files+ directory in the omnibus project. This directory can
-    # contain arbritary files used by the project.
+    # contain arbitrary files used by the project.
     #
     # @example
     #   patch = File.join(files_path, 'rubygems', 'patch.rb')
@@ -719,6 +726,70 @@ module Omnibus
     expose :ohai
 
     #
+    # Set or retrieve the {#license} of the project.
+    #
+    # @example
+    #   license 'Apache 2.0'
+    #
+    # @param [String] val
+    #   the license to set for the project.
+    #
+    # @return [String]
+    #
+    def license(val = NULL)
+      if null?(val)
+        @license || 'Unspecified'
+      else
+        @license = val
+      end
+    end
+    expose :license
+
+    #
+    # Set or retrieve the location of the {#license_file}
+    # of the project.  It can either be a relative path inside
+    # the project source directory or a URL.
+    #
+    #
+    # @example
+    #   license_file 'LICENSES/artistic.txt'
+    #
+    # @param [String] val
+    #   the location of the license file for the project.
+    #
+    # @return [String]
+    #
+    def license_file(val = NULL)
+      if null?(val)
+        @license_file
+      else
+        @license_file = val
+      end
+    end
+    expose :license_file
+
+    #
+    # Location of license file that omnibus will create and that will contain
+    # the information about the license of the project plus the details about
+    # the licenses of the software components included in the project.
+    #
+    # If no path is specified  install_dir/LICENSE is used.
+    #
+    # @example
+    #   license_file_path
+    #
+    # @return [String]
+    #
+    def license_file_path(path = NULL)
+      if null?(path)
+        @license_file_path || File.join(install_dir, "LICENSE")
+      else
+        @license_file_path = File.join(install_dir, path)
+      end
+    end
+    expose :license_file_path
+
+    #
     # Location of json-formated version manifest, written at at the
     # end of the build. If no path is specified
     # +install_dir+/version-manifest.json is used.
@@ -896,12 +967,12 @@ module Omnibus
     end
 
     #
-    # Instantiate a new instance of the best packager for this system.
+    # Instantiate new instances of the best packagers for this system.
     #
-    # @return [~Packager::Base]
+    # @return [[~Packager::Base]]
     #
-    def packager
-      @packager ||= Packager.for_current_system.new(self)
+    def packagers_for_system
+      @packagers_for_system ||= Packager.for_current_system.map { |p| p.new(self) }
     end
 
     #
@@ -1018,7 +1089,7 @@ module Omnibus
     #
     def built_manifest
       log.info(log_key) { "Building version manifest" }
-      m = Omnibus::Manifest.new(build_version, build_git_revision)
+      m = Omnibus::Manifest.new(build_version, build_git_revision, license)
       softwares.each do |software|
         m.add(software.name, software.manifest_entry)
       end
@@ -1049,6 +1120,7 @@ module Omnibus
 
       write_json_manifest
       write_text_manifest
+      Licensing.create!(self)
       HealthCheck.run!(self)
 
       # Remove any package this project extends, after the health check ran
@@ -1063,7 +1135,7 @@ module Omnibus
 
     def write_json_manifest
       File.open(json_manifest_path, 'w') do |f|
-        f.write(JSON.pretty_generate(built_manifest.to_hash))
+        f.write(FFI_Yajl::Encoder.encode(built_manifest.to_hash, pretty: true))
       end
     end
 
@@ -1101,18 +1173,20 @@ module Omnibus
         FileUtils.mkdir_p(destination)
       end
 
-      # Evaluate any packager-specific blocks, in order.
-      packagers[packager.id].each do |block|
-        packager.evaluate(&block)
+      packagers_for_system.each do |packager|
+        # Evaluate any packager-specific blocks, in order.
+        packagers[packager.id].each do |block|
+          packager.evaluate(&block)
+        end
+
+        # Run the actual packager
+        packager.run!
+
+        # Copy the generated package and metadata back into the workspace
+        package_path = File.join(Config.package_dir, packager.package_name)
+        FileUtils.cp(package_path, destination, preserve: true)
+        FileUtils.cp("#{package_path}.metadata.json", destination, preserve: true)
       end
-
-      # Run the actual packager
-      packager.run!
-
-      # Copy the generated package and metadata back into the workspace
-      package_path = File.join(Config.package_dir, packager.package_name)
-      FileUtils.cp(package_path, destination, preserve: true)
-      FileUtils.cp("#{package_path}.metadata.json", destination, preserve: true)
     end
 
     #
@@ -1182,7 +1256,7 @@ module Omnibus
 
         update_with_string(digest, name)
         update_with_string(digest, install_dir)
-        update_with_string(digest, JSON.fast_generate(overrides))
+        update_with_string(digest, FFI_Yajl::Encoder.encode(overrides))
 
         if filepath && File.exist?(filepath)
           update_with_file_contents(digest, filepath)
