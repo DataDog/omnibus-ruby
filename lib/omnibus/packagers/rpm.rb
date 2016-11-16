@@ -306,10 +306,16 @@ module Omnibus
     # @return [String]
     #
     def mark_filesystem_directories(fsdir)
-      if fsdir.eql?('/') || fsdir.eql?('/usr/lib') || fsdir.eql?('/usr/share/empty')
-        return "%dir %attr(0555,root,root) #{fsdir}"
+      # Workaround for datadog-agent: do not list `filesystem` directories in the package because some packages
+      # installed by default on some distros have a complete disregard for the permissions defined by their
+      # own `filesystem` pkg, and then conflict with the datadog-agent pkg
+      # Example: the `service-nanny` pkg on Amazon Linux EMR, which defines `755` perms on `/usr/bin`
+      if fsdir.eql?('/') || fsdir.eql?('/usr/bin') || fsdir.eql?('/usr/lib') || fsdir.eql?('/usr/share/empty')
+        # return "%dir %attr(0555,root,root) #{fsdir}"
+        return ""
       elsif filesystem_directories.include?(fsdir)
-        return "%dir %attr(0755,root,root) #{fsdir}"
+        # return "%dir %attr(0755,root,root) #{fsdir}"
+        return ""
       else
         return "%dir #{fsdir}"
       end
@@ -336,6 +342,7 @@ module Omnibus
       # Get a list of all files
       files = FileSyncer.glob("#{build_dir}/**/*")
                 .map    { |path| build_filepath(path) }
+                .reject { |path| path.empty? }
 
       render_template(resource_path('spec.erb'),
         destination: spec_file,
@@ -346,7 +353,6 @@ module Omnibus
           iteration:       safe_build_iteration,
           vendor:          vendor,
           license:         license,
-          dist_tag:        dist_tag,
           maintainer:      project.maintainer,
           homepage:        project.homepage,
           description:     project.description,
@@ -612,6 +618,30 @@ module Omnibus
       else
         Ohai['kernel']['machine']
       end
+    end
+
+    #
+    # Install the specified packages
+    #
+    # @return [void]
+    #
+    def install(packages, enablerepo = NULL)
+      if null?(enablerepo)
+        enablerepo_string = ''
+      else
+        enablerepo_string = "--disablerepo='*' --enablerepo='#{enablerepo}'"
+      end
+      shellout!('yum clean expire-cache')
+      shellout!("yum -y #{enablerepo_string} install #{packages}")
+    end
+
+    #
+    # Remove the specified package
+    #
+    # @return [void]
+    #
+    def remove(packages)
+      `yum -y remove #{packages}`
     end
   end
 end

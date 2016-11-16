@@ -230,7 +230,7 @@ module Omnibus
         destination: File.join(debian_dir, 'control'),
         variables: {
           name:           safe_base_package_name,
-          version:        safe_version,
+          version:        safe_epoch + safe_version,
           iteration:      safe_build_iteration,
           vendor:         vendor,
           license:        license,
@@ -439,6 +439,29 @@ module Omnibus
     #
     def safe_architecture
       @safe_architecture ||= shellout!("dpkg --print-architecture").stdout.split("\n").first || "noarch"
+    end
+
+    #
+    # Install the specified packages
+    #
+    # @return [void]
+    #
+    def install(packages, enablerepo = NULL)
+      if null?(enablerepo)
+        shellout!('apt-get update')
+      else
+        shellout!("apt-get update -o Dir::Etc::sourcelist='sources.list.d/#{enablerepo}.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0'")
+      end
+      shellout!("apt-get install -y --force-yes #{packages}")
+    end
+
+    #
+    # Remove the specified packages
+    #
+    # @return [void]
+    #
+    def remove(packages)
+      shellout!("apt-get remove -y --force-yes #{packages}")
     end
   end
 end

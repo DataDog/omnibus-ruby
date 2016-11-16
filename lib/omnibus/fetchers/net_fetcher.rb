@@ -350,6 +350,20 @@ module Omnibus
     # @return [[String]]
     #
     def extract_command
+      if Ohai['platform'] == 'windows' && downloaded_file.end_with?(*WIN_7Z_EXTENSIONS)
+        "7z.exe x #{windows_safe_path(downloaded_file)} -o#{Config.source_dir} -r -y"
+      elsif Ohai['platform'] != 'windows' && downloaded_file.end_with?('.7z')
+        "7z x #{windows_safe_path(downloaded_file)} -o#{Config.source_dir} -r -y"
+      elsif Ohai['platform'] != 'windows' && downloaded_file.end_with?('.zip')
+        "unzip #{windows_safe_path(downloaded_file)} -d #{Config.source_dir}"
+      elsif downloaded_file.end_with?(*TAR_EXTENSIONS)
+        compression_switch = 'z' if downloaded_file.end_with?('gz')
+        compression_switch = 'j' if downloaded_file.end_with?('bz2')
+        compression_switch = 'J' if downloaded_file.end_with?('xz')
+        compression_switch = ''  if downloaded_file.end_with?('tar')
+
+        "#{tar} #{compression_switch}xfo #{windows_safe_path(downloaded_file)} -C#{Config.source_dir}"
+      end
     end
 
     #

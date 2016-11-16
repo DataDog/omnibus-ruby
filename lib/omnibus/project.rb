@@ -626,6 +626,33 @@ module Omnibus
     end
     expose :runtime_dependency
 
+    # Add package(s) that this project extends.
+    #
+    # Use this to avoid packaging many files and libraries already included by
+    # the extended projects.
+    # This means that the project will rely on the extended packages to be
+    # installed to behave as expected.
+    # Extending a project is similar to running `apt-get install packages` before the
+    # project build, and `apt-get purge packages` before the packaging
+    #
+
+    # @example
+    #   extends_packages 'datadog-agent dd-check-mysql' 'datadog'
+    #
+    # @param [String] packages
+    #   the name of the extended packages
+    # @param [String] enablerepo
+    #   set if a specific repository needs to be enabled (`--enablerepo` for rpm)
+    #
+    # @return [Array<String>]
+    #   the list of extended packages
+    #
+    def extends_packages(packages, enablerepo = NULL)
+      extended_packages << [packages, enablerepo]
+      extended_packages.dup
+    end
+    expose :extends_packages
+
     #
     # Add a new exclusion pattern for a list of files or folders to exclude
     # when making the package.
@@ -880,6 +907,14 @@ module Omnibus
       @runtime_dependencies ||= []
     end
 
+    # The list of packages this project extends.
+    #
+    # @return [Array<String>]
+    #
+    def extended_packages
+      @extended_packages ||= []
+    end
+
     #
     # The list of things this project conflicts with.
     #
@@ -1073,6 +1108,12 @@ module Omnibus
       FileUtils.rm_rf(install_dir)
       FileUtils.mkdir_p(install_dir)
 
+      # Install any package this project extends
+      extended_packages.each do |packages, enablerepo|
+        log.info(log_key) { "installing #{packages}" }
+        packager.install(packages, enablerepo)
+      end
+
       softwares.each do |software|
         software.build_me
       end
@@ -1081,6 +1122,13 @@ module Omnibus
       write_text_manifest
       Licensing.create!(self)
       HealthCheck.run!(self)
+
+      # Remove any package this project extends, after the health check ran
+      extended_packages.each do |packages, _|
+        log.info(log_key) { "removing #{packages}" }
+        packager.remove(packages)
+      end
+
       package_me
       compress_me
     end
