@@ -626,7 +626,7 @@ module Omnibus
     # This means that the project will rely on the extended packages to be
     # installed to behave as expected.
     # Extending a project is similar to running `apt-get install packages` before the
-    # project build, and `apt-get purge packages` before the packaging
+    # project build, and `apt-get remove packages` before the packaging
     #
 
     # @example
@@ -1051,11 +1051,34 @@ module Omnibus
       write_text_manifest
       HealthCheck.run!(self)
 
+      # the extends packages logic may remove extra files
+      # needed for the integrations sdk
+      # This is a temp workaround.
+      tmp_extra_pkg_files = {}
+      tmp_extra_pkg_files_dir = '/tmp/extra_files_tmp/'
+      FileUtils.mkdir_p(tmp_extra_pkg_files_dir)
+      extra_package_files.each do |extra_file|
+        file_base = File.basename extra_file
+        temp_file = "#{tmp_extra_pkg_files_dir}#{file_base}"
+        tmp_extra_pkg_files[temp_file] = extra_file
+        FileUtils.cp(extra_file, temp_file, preserve: true)
+      end
+
       # Remove any package this project extends, after the health check ran
       extended_packages.each do |packages, _|
         log.info(log_key) { "removing #{packages}" }
         packager.remove(packages)
       end
+
+      tmp_extra_pkg_files.each do |temp_file, extra_file|
+        unless FileTest.exist?(extra_file)
+          extra_file_dir = File.dirname extra_file
+          FileUtils.mkdir_p extra_file_dir
+          FileUtils.cp(temp_file, extra_file, preserve: true)
+        end
+      end
+
+      FileUtils.rmdir(tmp_extra_pkg_files_dir)
 
       package_me
       compress_me
