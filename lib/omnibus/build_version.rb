@@ -120,23 +120,16 @@ module Omnibus
       build_tag
     end
 
-    # Generates a version string compliant with Datadog agent stable/nightly builds
-    # It works as a patch on top of Omnibus::BuildVersion#semver.
-    # Returns:
-    #  - For stable builds: `semver` output
-    #  - For nightly builds: AGENT_VERSION+git.COMMITS_SINCE.GIT_SHA
-    #    (where `AGENT_VERSION` is an environment variable)
     #
-    # It also takes care of adding the epoch "1:" (epoch is not in the semver
-    # specs and is actually used by YUM and APT but doesn't reall have an
-    # equivalent on OSX/Windows (where version numbers don't really matter
-    # anyway...)
-    def dd_agent_format
-      agent_version = semver
-      if ENV['AGENT_VERSION'] and ENV['AGENT_VERSION'].length > 1 and agent_version.include? "git"
-        agent_version = ENV['AGENT_VERSION'] + "." + agent_version.split("+")[1]
+    # Use a semver version but replace the '+' by a '.' to work around caveats one can run
+    # into on Amazon S3 not supporting '+' character in item names
+    #
+    def s3_compliant_semver
+      pkg_version = semver
+      if pkg_version.include? '+'
+        pkg_version = pkg_version.split('+')[0] + '.' + pkg_version.split('+')[1]
       end
-      agent_version
+      pkg_version
     end
 
     # Generates a version string by running
@@ -152,7 +145,7 @@ module Omnibus
     # @return [String]
     def git_describe
       @git_describe ||= begin
-        cmd = shellout('git describe --tags', cwd: @path)
+        cmd = shellout('git describe --tags `git rev-list --tags --max-count=1`', cwd: @path)
 
         if cmd.exitstatus == 0
           cmd.stdout.chomp
