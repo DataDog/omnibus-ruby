@@ -1,13 +1,184 @@
 Omnibus CHANGELOG
 =================
-v4.1.0 (Unreleased)
+
+v5.5.0 (August 16, 2016)
+-----------------------
+### New Features
+- Add build timings to the local output (#669)
+- Add `appx` packager (#675, #676, #677)
+- `fatal_licensing_warnings` configuration to fail the build when there are licensing problems (#678)
+- Ensure consistent code style using Chefstyle \o/ (#681)
+- Drop Ruby 2.0 support (#697)
+- Remove fakeroot from RPM packager (#698)
+- Support license collection with git cache (#700)
+- Add `SERIAL_NUMBER` to omnibus code, which is used in git caching to invalidate caches when omnibus code changes require it to be invalidated  (#704)
+- Support license collection of transitive dependencies (via license_scout gem) (#705)
+- Add `skip_transitive_dependency_licensing` dsl method to Software. Use this when the software does not use any dependency manager. (#705)
+
+### Bug Fixes
+- Make license files readable inside the packages (#673)
+- Prefer server marketing names on windows (#679)
+- Instead of exe, use bat if present on windows (#684)
+- Fix changelog generation with symbolized keys (#687)
+
+
+v5.4.0 (April 18, 2016)
+-----------------------
+### New Features
+- Include license and version manifest in generated `*.metadata.json` (#656)
+- Deprecate the `--version-manifest` on `omnibus publish` (#656)
+- Create Solaris IPS package (#654)
+- Use symbolized keys for all Manifest hashes (#657)
+- Publish a package’s `*.metadata.json` to Artifactory (#664)
+- Add the build’s `LICENSE` content to `*.metadata.json` (#664)
+
+### Bug Fixes
+- Add proper support for loading v2 manifests (#657)
+- Replacing the use of JSON gem with FFI_yajl (#661)
+
+v5.3.0 (March 25, 2016)
+-----------------------
+### New Features
+
+- Get correct architecture name for Debian environments from `dpkg` (#646)
+- Update fauxhai to latest (#652)
+- Use project.license in deb and rpm packagers if available (#653)
+- Whitelist additional Solaris11 libraries (#650)
+- Use gcc 4.9 on freebsd (#649)
+- Per-Platform manifest generation (#645)
+  - Support omnibus manifest arguments: `omnibus manifest --os=OS --platform-family=FAMILY --platform=PLATFORM --platform-version=VERSION`
+  - Can be used to generate manifests for other platforms than the one you are on, allowing a multi-platform build to be quickly set up.
+  - Affects chef-sugar's `windows?`, `solaris?` and similar functions, which are used by software in `omnibus-software`
+- Performance: Ignore non-libraries in health checks (#642)
+- Add `github` source (#643)
+- Add `suse` support (#647)
+- Exclude files with whitespace names from AIX packages (#641)
+- Fix compilation problems on Windows (#640)
+  - Disable `sse` to avoid compilation segfaults
+  - Don't change newlines when `git pull`ing
+- Warn when software licenses are missing for software components (#638)
+- Add Chef MLSA to the list of recognized licenses (#639)
+- Download remote license files into the LICENSES directory (#637)
+
+v5.2.0 (March 15, 2016)
+-----------------------
+### New Features
+
+- License reporting (#635):
+  - Add `license` & `license_file` DSL methods to software.
+    - `license` (String): Sets the license of the software component.
+    - `license_file` (String): The relative path or the url of the license file of the software to be included in `"LICENSES"` directory.
+      - Can be used multiple times.
+      - You can use `:project_license` as a special value if the software is build related code and if it is using project's license.
+  - Add `license`, `license_file` and `license_file_path` DSL methods to project.
+    - `license` (String): Sets the license of the project.
+    - `license_file` (String): The relative path or the url of the license file of the project to be included in the file that will be created at project.license_file_path.
+    - `license_file_path` (String): The relative path of the main license file that will be created for the project. Default: `"LICENSE"`.
+
+  With this omnibus will:
+
+  1. Collect all the license files specified in software components into `install_dir/LICENSES` directory.
+  2. Create a license file at `install_dir/LICENSE` which will contain license of the project and license information for all the software components that are being included.
+- Ability to change `dist_tag` in RPM packager. (#634)
+- Ability to update submodules during git checkout. (#603)
+
+v5.1.0 (March 10, 2016)
+-----------------------
+### New Features
+- New `configure` dsl method. (#572)
+- New `maintainer` dsl method. (#618)
+- New `update_config_guess` dsl method. (#632)
+- Ability to enable building software components from source on windows. (#572, #583, #584, #586, #612)
+
+### Bug Fixes
+- Default to UTF-8 external encoding globally. (#573)
+- Restore invalid file names on AIX. (#575)
+- Fix bff log loop. (#579)
+- Use 7z.exe instead of tar.exe on windows. (#578)
+- Make generated package scripts old-school Unix friendly. (#582)
+- Fix directory cleanup logic in `git_fetcher`. (#509)
+- Use -O2 when building with standard compiler flags. (#591)
+- Cache software sources under `.../src/<software name>/<package>`. (#597)
+- Add libmd.so.* to freebsd whitelist. (#600)
+- Remove existing links in the destination when syncing files. (#602)
+- Skip adding DEBIAN directory to md5sums file. (#595)
+- Autoprunes files with spaces on Solaris. (#609)
+- Allow assets with non-md5 checksums to be cached in s3. (#611)
+- Print NetFetcher retries at the info level. (#614)
+- Do not modify CRLF when git caching. (#616)
+- Ensure we always swap chown back to default. (#617)
+
+v5.0.0 (November 10, 2015)
+--------------------------
+### New Features
+- Wind River Linux 5 support for Cisco Nexus devices (#539)
+- [artifactory publisher] Support custom properties in Artifactory publishing (#568)
+- [msi packager] New "fast" mode for MSI packager (#565)
+- Change the `appbundler` DSL method to not make an apps dir
+- Unit and functional tests now run on Windows (and are tested by Appveyor) (#556, #557)
+
+### Bug Fixes
+- [msi packager] Fix missing package name in signature (#541)
+- [rpm packager] Fix building RPMs on ARM platforms (#542)
+- [bff packager] Fix regression with AIX package ownership in staging directory (#553)
+- [solaris packager] Use the proper architecture value in Solaris packages (#554, #555)
+- Add info message for publish cli corner case (#551)
+- [net fetcher] missing checksum raises exception (#549)
+
+
+### Potentially Breaking Changes
+- Dropped Ruby 1.9.x support (#567)
+
+v4.1.0 (September 1, 2015)
+-------------------------
+### New Features
+- Allow semver prefixes that start with "v"
+- Reset target_shasum in PathFetcher after every fetch, preventing erroneous GitCache misses for builds that produced local artifacts during the previous omnibus run.
+- Allow users to specify options to the underlying FileSyncer in a Software definition
+- Add CPPFLAGS in with_standard_compiler_flags
+- Add a Fedora dist tag to package name and spec release
+- Copy distribution.xml.erb also when creating project with --pkg-assets
+- Manage version manifests with Omnibus. Omnibus now creates a version manifest in text and JSON.
+- Retry failed downloads
+- Support inclusion of email address in Wix template
+- Allow solaris to use mapfiles
+- A new `omnibus generate changelog` command generates an opinionated CHANGELOG entry based on metadata in commit messages.
+- Add warnings on empty globs.
+- Raspberry Pi 2 support
+- Clone git repositories with --recursive flag
+- Add ability to sign MSIs
+- Support running Omnibus with 64-bit ruby on Windows
+- Create an Artifactory build for published packages
+- Add a "windows_arch" omnibus option to choose 32/64 bit builds.
+- Set directory ownership/permissions to match the filesystem package.
+- Allow Windows 10 builders
+- Allow omnibus to build "bundled" Windows installers
+- Set perms on control files per Ubuntu Software Center's lintian checks.
+- Replace uber-s3 dependency with aws-sdk
+
 ### Bug Fixes
 - Config.append_timestamp is now properly handled by the build_version
   DSL.  For some users, this may introduce a change in behavior.  To
   revert to the old behavior set append_timestamp to false in
   `omnibus.rb` or use --override append_timestamp:false at the command
   line.
+- Do not memoize current_revision to avoid returning incorrect data. Memoizing current_revision was previously causing version_for_cache to return the pre-fetch revision of the software, leading us to erroneously restore an older revision from the cache.
+- Clean up "files listed twice" warnings. This should allow signing RPMs on EL 7
+- dpkg uses arch name ppc64el (instead of ppc64le) for little endian
+- Override equality operator for ManifestEntry. Prior to this, we simply tested basic object identity, which would result in many "updated" dependencies
+- Correctly determine git repository when running in a subdirectory
+- Forcibly remove a non-empty project dir before cloning because if multiple projects are using the same maching for building, they might have two different software definitions that share the same name but a different source.
+- Accomidate hardlinks properly
+- When building spec file, handle path names that contain spaces
+- Add libkvm and libprocstat to freebsd whitelist
+- Properly render ERB templates that do not have variables
+- Change git fetcher to correctly fetch when repo name is the same but branch/version is different.
 
+### Potentially Breaking Changes
+- `Omnibus::SemanticVersion.new` now raises `Omnibus::InvalidVersion` instead of `Omnibus::SemanticVersion::InvalidVersion`
+- Cache Builder#shasum before Builder#build to ensure consistent result.
+- Update chef-sugar to 3.0 which adds ppc64le support.
+- The MSI packager now adds the architecture to the msi name. The file names go from `package_name-build_version-build_iteration` to `package_name-build_version-build_iteration-arch`.
 
 v4.0.0 (December 15, 2014)
 --------------------------

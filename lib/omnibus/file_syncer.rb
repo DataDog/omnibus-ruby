@@ -14,14 +14,14 @@
 # limitations under the License.
 #
 
-require 'fileutils'
+require "fileutils"
 
 module Omnibus
   module FileSyncer
     extend self
 
     # Files to be ignored during a directory globbing
-    IGNORED_FILES = %w(. ..).freeze
+    IGNORED_FILES = %w{. ..}.freeze
 
     #
     # Glob across the given pattern, accounting for dotfiles, removing Ruby's
@@ -37,6 +37,31 @@ module Omnibus
       Dir.glob(pattern, File::FNM_DOTMATCH).sort.reject do |file|
         basename = File.basename(file)
         IGNORED_FILES.include?(basename)
+      end
+    end
+
+    #
+    # Glob for all files under a given path/pattern, removing Ruby's
+    # dumb idea to include +'.'+ and +'..'+ as entries.
+    #
+    # @param [String] source
+    #   the path or glob pattern to get all files from
+    #
+    # @option options [String, Array<String>] :exclude
+    #   a file, folder, or globbing pattern of files to ignore when syncing
+    #
+    # @return [Array<String>]
+    #   the list of all files
+    #
+    def all_files_under(source, options = {})
+      excludes = Array(options[:exclude]).map do |exclude|
+        [exclude, "#{exclude}/*"]
+      end.flatten
+
+      source_files = glob(File.join(source, "**/*"))
+      source_files = source_files.reject do |source_file|
+        basename = relative_path_for(source_file, source)
+        excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH) }
       end
     end
 
@@ -69,16 +94,7 @@ module Omnibus
           "the `copy' method instead."
       end
 
-      # Reject any files that match the excludes pattern
-      excludes = Array(options[:exclude]).map do |exclude|
-        [exclude, "#{exclude}/*"]
-      end.flatten
-
-      source_files = glob(File.join(source, '**/*'))
-      source_files = source_files.reject do |source_file|
-        basename = relative_path_for(source_file, source)
-        excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH) }
-      end
+      source_files = all_files_under(source, options)
 
       # Ensure the destination directory exists
       FileUtils.mkdir_p(destination) unless File.directory?(destination)
@@ -101,16 +117,31 @@ module Omnibus
             FileUtils.ln_sf(target, "#{destination}/#{relative_path}")
           end
         when :file
-          # First attempt a regular copy. If we don't have write
-          # permission on the File, open will probably fail with
-          # EACCES (making it hard to sync files with permission
-          # r--r--r--). Rescue this error and use cp_r's
-          # :remove_destination option.
-          begin
-            FileUtils.cp(source_file, "#{destination}/#{relative_path}")
-          rescue Errno::EACCES
-            FileUtils.cp_r(source_file, "#{destination}/#{relative_path}",
-                           :remove_destination => true)
+          source_stat = File.stat(source_file)
+          # Detect 'files' which are hard links and use ln instead of cp to
+          # duplicate them, provided their source is in place already
+          if hardlink? source_stat
+            if existing = hardlink_sources[[source_stat.dev, source_stat.ino]]
+              FileUtils.ln(existing, "#{destination}/#{relative_path}", force: true)
+            else
+              begin
+                FileUtils.cp(source_file, "#{destination}/#{relative_path}")
+              rescue Errno::EACCES
+                FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
+              end
+              hardlink_sources.store([source_stat.dev, source_stat.ino], "#{destination}/#{relative_path}")
+            end
+          else
+            # First attempt a regular copy. If we don't have write
+            # permission on the File, open will probably fail with
+            # EACCES (making it hard to sync files with permission
+            # r--r--r--). Rescue this error and use cp_r's
+            # :remove_destination option.
+            begin
+              FileUtils.cp(source_file, "#{destination}/#{relative_path}")
+            rescue Errno::EACCES
+              FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
+            end
           end
         else
           raise RuntimeError,
@@ -154,6 +185,35 @@ module Omnibus
     #
     def relative_path_for(path, parent)
       Pathname.new(path).relative_path_from(Pathname.new(parent)).to_s
+    end
+
+    #
+    # A list of hard link file(s) sources which have already been copied,
+    # indexed by device and inode number.
+    #
+    # @api private
+    #
+    # @return [Hash{Array<FixNum, FixNum> => String}]
+    #
+    def hardlink_sources
+      @hardlink_sources ||= {}
+    end
+
+    #
+    # Determines whether or not a file is a hardlink.
+    #
+    # @param [File::Stat] stat
+    #   the File::Stat object for a file you wand to test
+    #
+    # @return [true, false]
+    #
+    def hardlink?(stat)
+      case stat.ftype.to_sym
+      when :file
+        stat.nlink > 1
+      else
+        false
+      end
     end
   end
 end

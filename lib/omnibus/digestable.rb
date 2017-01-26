@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
-require 'openssl'
-require 'pathname'
-require 'omnibus/logging'
+require "openssl"
+require "pathname"
+require "omnibus/logging"
 
 module Omnibus
   module Digestable
@@ -24,6 +24,7 @@ module Omnibus
     def self.included(other)
       other.send(:include, Logging)
     end
+
     #
     # Calculate the digest of the file at the given path. Files are read in
     # binary chunks to prevent Ruby from exploding.
@@ -62,21 +63,23 @@ module Omnibus
     #   the path of the directory to digest
     # @param [Symbol] type
     #   the type of digest to use
+    # @param [Hash] options
+    #   options to pass through to the FileSyncer when scanning for files
     #
     # @return [String]
     #   the hexdigest of the directory
     #
-    def digest_directory(path, type = :md5)
+    def digest_directory(path, type = :md5, options = {})
       digest = digest_from_type(type)
       log.info(log_key) { "Digesting #{path} with #{type}" }
-      FileSyncer.glob("#{path}/**/*").each do |filename|
+      FileSyncer.all_files_under(path, options).each do |filename|
         # Calculate the filename relative to the given path. Since directories
         # are SHAed according to their filepath, two difference directories on
         # disk would have different SHAs even if they had the same content.
         relative = Pathname.new(filename).relative_path_from(Pathname.new(path))
 
         case ftype = File.ftype(filename)
-        when 'file'
+        when "file"
           update_with_string(digest, "#{ftype} #{relative}")
           update_with_file_contents(digest, filename)
         else

@@ -1,4 +1,4 @@
-require 'spec_helper'
+require "spec_helper"
 
 module Omnibus
   describe BuildVersionDSL do
@@ -10,11 +10,11 @@ module Omnibus
     let(:today_string) { Time.now.utc.strftime(Omnibus::BuildVersion::TIMESTAMP_FORMAT) }
 
     let(:zoo_version) { double("BuildVersion", semver: "5.5.5", custom: "7.7.7", build_start_time: today_string) }
-    let(:zoo_software) { double("software", name: 'zoo', project_dir: '/etc/zoo', version: "6.6.6") }
+    let(:zoo_software) { double("software", name: "zoo", project_dir: "/etc/zoo", version: "6.6.6") }
 
     describe "when given nil" do
       it "fails" do
-        expect { subject.build_version }.to raise_error
+        expect { subject.build_version }.to raise_error(RuntimeError)
       end
     end
 
@@ -27,7 +27,7 @@ module Omnibus
     describe "when Config.append_timestamp is true" do
       let(:description) do
         proc do
-            source(:git, from_dependency: 'zoo')
+          source(:git, from_dependency: "zoo")
         end
       end
 
@@ -54,7 +54,7 @@ module Omnibus
       describe "when given a software as source" do
         let(:description) do
           proc do
-            source(:git, from_dependency: 'zoo')
+            source(:git, from_dependency: "zoo")
           end
         end
 
@@ -110,7 +110,7 @@ module Omnibus
       describe "when given a software as source" do
         let(:description) do
           proc do
-            source(:version, from_dependency: 'zoo')
+            source(:version, from_dependency: "zoo")
           end
         end
 
@@ -128,7 +128,7 @@ module Omnibus
         end
 
         it "fails" do
-          expect { subject_with_description.build_version }.to raise_error
+          expect { subject_with_description.build_version }.to raise_error(RuntimeError)
         end
       end
     end
@@ -141,7 +141,7 @@ module Omnibus
       end
 
       it "fails" do
-        expect { subject_with_description.build_version }.to raise_error
+        expect { subject_with_description.build_version }.to raise_error(RuntimeError)
       end
     end
   end

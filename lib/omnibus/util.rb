@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-require 'mixlib/shellout'
+require "mixlib/shellout"
 
 module Omnibus
   module Util
@@ -46,7 +46,7 @@ module Omnibus
     #   @param options [Hash] the options passed to the initializer of the
     #     +Mixlib::ShellOut+ instance.
     # @return [Mixlib::ShellOut] the underlying +Mixlib::ShellOut+ instance
-    #   which which has +stdout+, +stderr+, +status+, and +exitstatus+
+    #   which has +stdout+, +stderr+, +status+, and +exitstatus+
     #   populated with results of the command.
     #
     def shellout(*args)
@@ -67,9 +67,9 @@ module Omnibus
 
       # Log any environment options given
       unless options[:environment].empty?
-        log.public_send(log_level, log_key)  { 'Environment:' }
+        log.public_send(log_level, log_key) { "Environment:" }
         options[:environment].sort.each do |key, value|
-          log.public_send(log_level, log_key)  { "  #{key}=#{value.inspect}" }
+          log.public_send(log_level, log_key) { "  #{key}=#{value.inspect}" }
         end
       end
 
@@ -77,7 +77,7 @@ module Omnibus
       log.public_send(log_level, log_key) { "$ #{args.join(' ')}" }
 
       cmd = Mixlib::ShellOut.new(*args, options)
-      cmd.environment['HOME'] = '/tmp' unless ENV['HOME']
+      cmd.environment["HOME"] = "/tmp" unless ENV["HOME"]
       cmd.run_command
       cmd
     end
@@ -202,7 +202,7 @@ module Omnibus
       FileUtils.mkdir_p(File.dirname(path))
 
       if block
-        File.open(path, 'wb') { |f| f.write(block.call) }
+        File.open(path, "wb") { |f| f.write(yield) }
       else
         FileUtils.touch(path)
       end

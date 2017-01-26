@@ -46,9 +46,9 @@ EOH
   end
 
   class MissingRequiredAttribute < Error
-    def initialize(instance, name, sample = '<VALUE>')
+    def initialize(instance, name, sample = "<VALUE>")
       @instance, @name, @sample = instance, name, sample
-      @class = instance.class.name.split('::').last
+      @class = instance.class.name.split("::").last
     end
 
     def to_s
@@ -87,7 +87,7 @@ EOH
 
     def to_s
       <<-EOH
-Attempting to evaluate the template `#{@name}', but it was not found at any of
+Attempting to evaluate the template `#{@template}', but it was not found at any of
 the following locations:
 
 #{@search_paths.map { |path| "    #{path}" }.join("\n")}
@@ -105,7 +105,7 @@ EOH
       <<-EOH
 I could not find a project named `#{@name}' in any of the project locations:"
 
-#{@possible_paths.map { |path| "    #{path}"}.join("\n")}
+#{@possible_paths.map { |path| "    #{path}" }.join("\n")}
 EOH
     end
   end
@@ -120,7 +120,7 @@ EOH
       <<-EOH
 I could not find a software named `#{@name}' in any of the software locations:"
 
-#{@possible_paths.map { |path| "    #{path}"}.join("\n")}
+#{@possible_paths.map { |path| "    #{path}" }.join("\n")}
 EOH
     end
   end
@@ -214,6 +214,18 @@ EOH
     end
   end
 
+  class ChecksumMissing < Error
+    def initialize(software)
+      super <<-EOH
+Verification for #{software.name} failed due to a missing checksum.
+
+This added security check is used to prevent MITM attacks when downloading the
+remote file. You must specify a checksum for each version of software downloaded
+from a remote location.
+EOH
+    end
+  end
+
   class ChecksumMismatch < Error
     def initialize(software, expected, actual)
       super <<-EOH
@@ -237,14 +249,14 @@ EOH
       if cmd.environment.nil? || cmd.environment.empty?
         env = nil
       else
-        env = cmd.environment.sort.map { |k,v| "#{k}=#{v}" }.join(' ')
+        env = cmd.environment.sort.map { |k, v| "#{k}=#{v}" }.join(" ")
       end
 
       command = cmd.command
-      command_with_env = [env, command].compact.join(' ')
+      command_with_env = [env, command].compact.join(" ")
 
-      stdout = cmd.stdout.empty? ? '(nothing)' : cmd.stdout.strip
-      stderr = cmd.stderr.empty? ? '(nothing)' : cmd.stderr.strip
+      stdout = cmd.stdout.empty? ? "(nothing)" : cmd.stdout.strip
+      stderr = cmd.stderr.empty? ? "(nothing)" : cmd.stderr.strip
 
       super <<-EOH
 The following shell command exited with status #{status}:
@@ -269,13 +281,13 @@ EOH
       if cmd.environment.nil? || cmd.environment.empty?
         env = nil
       else
-        env = cmd.environment.sort.map { |k,v| "#{k}=#{v}" }.join(' ')
+        env = cmd.environment.sort.map { |k, v| "#{k}=#{v}" }.join(" ")
       end
 
       command = cmd.command
-      command_with_env = [env, command].compact.join(' ')
+      command_with_env = [env, command].compact.join(" ")
 
-      timeout = cmd.timeout.to_s.reverse.gsub(/...(?=.)/,'\&,').reverse
+      timeout = cmd.timeout.to_s.reverse.gsub(/...(?=.)/, '\&,').reverse
 
       super <<-EOH
 The following shell command timed out at #{timeout} seconds:
@@ -315,6 +327,28 @@ EOH
       super <<-EOF
 '#{version}' could not be parsed as a valid version.
 EOF
+    end
+  end
+
+  class FailedToSignWindowsPackage < Error
+    def initialize
+      super("Failed to sign Windows Package.")
+    end
+  end
+
+  class LicensingError < Error
+    def initialize(errors)
+      @errors = errors
+    end
+
+    def to_s
+      <<-EOH
+Encountered error(s) with project's licensing information.
+Failing the build because :fatal_licensing_warnings is set in the configuration.
+Error(s):
+
+    #{@errors.join("\n    ")}
+EOH
     end
   end
 end

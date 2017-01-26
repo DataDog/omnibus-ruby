@@ -14,22 +14,33 @@
 # limitations under the License.
 #
 
-require 'digest'
-require 'fileutils'
+require "digest"
+require "fileutils"
 
 module Omnibus
   class GitCache
     include Util
     include Logging
 
-    REQUIRED_GIT_FILES = [
-      'HEAD',
-      'description',
-      'hooks',
-      'info',
-      'objects',
-      'refs',
-    ].freeze
+    # The serial number represents compatibility of a cache entry with the
+    # current version of the omnibus code base. Any time a change is made to
+    # omnibus that makes the code incompatible with any cache entries created
+    # before the code change, the serial number should be incremented.
+    #
+    # For example, if a code change generates content in the `install_dir`
+    # before cache snapshots are taken, any snapshots created before upgrade
+    # will not have the generated content, so these snapshots would be
+    # incompatible with the current omnibus codebase. Incrementing the serial
+    # number ensures these old shapshots will not be used in subsequent builds.
+    SERIAL_NUMBER = 1
+
+    REQUIRED_GIT_FILES = %w{
+HEAD
+description
+hooks
+info
+objects
+refs}.freeze
 
     #
     # @return [Software]
@@ -64,7 +75,7 @@ module Omnibus
         false
       else
         create_directory(File.dirname(cache_path))
-        shellout!("git --git-dir=#{cache_path} init -q")
+        git_cmd("init -q")
         true
       end
     end
@@ -98,8 +109,8 @@ module Omnibus
       # This is the list of all the unqiue shasums of all the software build
       # dependencies, including the on currently being acted upon.
       shasums = [dep_list.map(&:shasum), software.shasum].flatten
-      suffix  = Digest::SHA256.hexdigest(shasums.join('|'))
-      @tag    = "#{software.name}-#{suffix}"
+      suffix  = Digest::SHA256.hexdigest(shasums.join("|"))
+      @tag    = "#{software.name}-#{suffix}-#{SERIAL_NUMBER}"
 
       log.internal(log_key) { "tag: #{@tag}" }
 
@@ -108,37 +119,37 @@ module Omnibus
 
     # Create an incremental install path cache for the software step
     def incremental
-      log.internal(log_key) { 'Performing incremental cache' }
+      log.internal(log_key) { "Performing incremental cache" }
 
       create_cache_path
       remove_git_dirs
 
-      shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} add -A -f))
+      git_cmd("add -A -f")
 
       begin
-        shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} commit -q -m "Backup of #{tag}"))
+        git_cmd(%Q{commit -q -m "Backup of #{tag}"})
       rescue CommandFailed => e
-        raise unless e.message.include?('nothing to commit')
+        raise unless e.message.include?("nothing to commit")
       end
 
-      shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} tag -f "#{tag}"))
+      git_cmd(%Q{tag -f "#{tag}"})
     end
 
     def restore
-      log.internal(log_key) { 'Performing cache restoration' }
+      log.internal(log_key) { "Performing cache restoration" }
 
       create_cache_path
 
-      cmd = shellout(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} tag -l "#{tag}"))
-
       restore_me = false
+      cmd = git_cmd(%Q{tag -l "#{tag}"})
+
       cmd.stdout.each_line do |line|
         restore_me = true if tag == line.chomp
       end
 
       if restore_me
         log.internal(log_key) { "Detected tag `#{tag}' can be restored, restoring" }
-        shellout!(%Q(git --git-dir=#{cache_path} --work-tree=#{install_dir} checkout -f "#{tag}"))
+        git_cmd(%Q{checkout -f "#{tag}"})
         true
       else
         log.internal(log_key) { "Could not find tag `#{tag}', skipping restore" }
@@ -170,6 +181,19 @@ module Omnibus
     private
 
     #
+    # Shell out and invoke a git command in the context of the git cache.
+    #
+    # We explicitly disable autocrlf because we want bit-for-bit storage and
+    # recovery of build output. Hashes calculated on output files will be
+    # invalid if we muck around with files after they have been produced.
+    #
+    # @return [Mixlib::Shellout] the underlying command object.
+    #
+    def git_cmd(command)
+      shellout!("git -c core.autocrlf=false --git-dir=#{cache_path} --work-tree=#{install_dir} #{command}")
+    end
+
+    #
     #
     # The installation directory for this software's project. Drive letters are
     # stripped for Windows.
@@ -177,7 +201,7 @@ module Omnibus
     # @return [String]
     #
     def install_dir
-      @install_dir ||= software.project.install_dir.sub(/^([A-Za-z]:)/, '')
+      @install_dir ||= software.project.install_dir.sub(/^([A-Za-z]:)/, "")
     end
 
     # Override the log_key for this class to include the software name
