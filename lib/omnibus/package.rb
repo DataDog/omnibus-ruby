@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-require 'json'
+require "ffi_yajl"
 
 module Omnibus
   class Package
@@ -95,12 +95,21 @@ module Omnibus
     # The parsed contents of the metadata.
     #
     # @raise [NoPackageMetadataFile] if the {#metadata} does not exist
-    # @raise [JSON::ParserError] if the JSON is not valid
+    # @raise [FFI_Yajl::ParseError] if the JSON is not valid
     #
     # @return [Hash<Symbol, String>]
     #
     def metadata
       @metadata ||= Metadata.for_package(self)
+    end
+
+    #
+    # Set the metadata for this package
+    #
+    # @param [Metadata] metadata
+    #
+    def metadata=(metadata)
+      @metadata = metadata
     end
 
     #

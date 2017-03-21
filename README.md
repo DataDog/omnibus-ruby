@@ -1,10 +1,12 @@
 ![Omnibus Icon](lib/omnibus/assets/README-logo.png) Omnibus
 ===========================================================
 [![Gem Version](http://img.shields.io/gem/v/omnibus.svg)][gem]
-[![Build Status](http://img.shields.io/travis/chef/omnibus.svg)][travis]
+[![Travis Build Status](http://img.shields.io/travis/chef/omnibus.svg?label=Travis CI)][travis]
+[![AppVeyor Build Status](http://img.shields.io/appveyor/ci/chef/omnibus.svg?label=AppVeyor)][appveyor]
 
 [gem]: https://rubygems.org/gems/omnibus
-[travis]: http://travis-ci.org/chef/omnibus
+[travis]: https://travis-ci.org/chef/omnibus
+[appveyor]: https://ci.appveyor.com/project/chef/omnibus
 
 Easily create full-stack installers for your project across a variety of platforms.
 
@@ -19,7 +21,7 @@ Prerequisites
 -------------
 Omnibus is designed to run with a minimal set of prerequisites. You will need the following:
 
-- Ruby 1.9+
+- Ruby 2.0.0+
 - Bundler
 
 
@@ -199,7 +201,7 @@ Additionally, there are a number of DSL methods avaiable inside the `build` bloc
 
 For more DSL methods, please consult the [`Builder` documentation](http://rubydoc.info/github/opscode/omnibus/Omnibus/Builder).
 
-You can support building multiple verisons of the same software in the same software definition file using the `version` method and giving a block:
+You can support building multiple versions of the same software in the same software definition file using the `version` method and giving a block:
 
 ```ruby
 name "ruby"
@@ -269,6 +271,24 @@ omnibus manifest PROJECT -l warn
 This will output a JSON-formatted manifest containing the resolved
 version of every software definition.
 
+Whitelisting Libraries
+----------------------
+
+Sometimes a platform has libraries that need to be whitelisted so the healthcheck
+can pass. The whitelist found in the [healthcheck](https://github.com/chef/omnibus/blob/master/lib/omnibus/health_check.rb)
+code comprises the minimal required for successful builds on supported platforms.
+
+To add your own whitelisted library, simply add the a regex to your software
+definition in your omnibus project as follows:
+```
+whitelist_file /libpcrecpp\.so\..+/
+```
+It is typically a good idea to add a conditional to whitelist based on the specific
+platform that requires it.
+
+*Warning: You should only add libraries to the whitelist that are guaranteed to
+be on the system you install to; if a library comes from a non-default package
+you should instead build it into the package.*
 
 Changelog
 ---------
@@ -323,7 +343,7 @@ use_git_caching false
 License
 -------
 ```text
-Copyright 2012-2014 Chef Software, Inc.
+Copyright 2012-2016 Chef Software, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

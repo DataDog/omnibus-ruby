@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
-require 'fileutils'
-require 'uri'
-require 'omnibus/manifest_entry'
+require "fileutils"
+require "uri"
+require "omnibus/manifest_entry"
 
 module Omnibus
   class Software
@@ -30,14 +30,14 @@ module Omnibus
       # @return [Software]
       #
       def load(project, name, manifest)
-        loaded_softwares[name] ||= begin
+        loaded_softwares["#{project.name}:#{name}"] ||= begin
           filepath = Omnibus.software_path(name)
 
           if filepath.nil?
             raise MissingSoftware.new(name)
           else
             log.internal(log_key) do
-              "Loading software `#{name}' from `#{filepath}'."
+              "Loading software `#{name}' from `#{filepath}' using overrides from #{project.name}."
             end
           end
 
@@ -50,6 +50,13 @@ module Omnibus
 
           instance
         end
+      end
+
+      #
+      # Reset cached software information.
+      #
+      def reset!
+        @loaded_softwares = nil
       end
 
       private
@@ -69,6 +76,7 @@ module Omnibus
     include Logging
     include NullArgumentable
     include Sugarable
+    include Util
 
     attr_reader :manifest
 
@@ -84,7 +92,7 @@ module Omnibus
     #
     # @return [Software]
     #
-    def initialize(project, filepath = nil, manifest=nil)
+    def initialize(project, filepath = nil, manifest = nil)
       unless project.is_a?(Project)
         raise ArgumentError,
           "`project' must be a kind of `Omnibus::Project', but was `#{project.class.inspect}'!"
@@ -101,10 +109,10 @@ module Omnibus
 
     def manifest_entry
       @manifest_entry ||= if manifest
-                            log.info(log_key) {"Using user-supplied manifest entry for #{name}"}
+                            log.info(log_key) { "Using user-supplied manifest entry for #{name}" }
                             manifest.entry_for(name)
                           else
-                            log.info(log_key) {"Resolving manifest entry for #{name}"}
+                            log.info(log_key) { "Resolving manifest entry for #{name}" }
                             to_manifest_entry
                           end
     end
@@ -149,12 +157,30 @@ module Omnibus
     #
     def name(val = NULL)
       if null?(val)
-        @name || raise(MissingRequiredAttribute.new(self, :name, 'libxslt'))
+        @name || raise(MissingRequiredAttribute.new(self, :name, "libxslt"))
       else
         @name = val
       end
     end
     expose :name
+
+    # Sets wether the software should always be built or not.
+    # Since it doesn't influence the build order, you should put these
+    # dependencies at the end to maximize the git caching
+    #
+    # @example
+    #   always_build true
+    #
+    # @return [Boolean]
+    #
+    def always_build(val = NULL)
+      if null?(val)
+        @always_build
+      else
+        @always_build = val
+      end
+    end
+    expose :always_build
 
     #
     # Sets the description of the software.
@@ -175,6 +201,27 @@ module Omnibus
       end
     end
     expose :description
+
+    #
+    # Sets the maintainer of the software.  Currently this is for
+    # human consumption only and the tool doesn't do anything with it.
+    #
+    # @example
+    #   maintainer "Joe Bob <joeb@chef.io>"
+    #
+    # @param [String] val
+    #   the maintainer of this sofware def
+    #
+    # @return [String]
+    #
+    def maintainer(val = NULL)
+      if null?(val)
+        @maintainer
+      else
+        @description = val
+      end
+    end
+    expose :maintainer
 
     #
     # Add a software dependency to this software.
@@ -215,16 +262,41 @@ module Omnibus
     #
     # @option val [String] :git (nil)
     #   a git URL
+    # @option val [String] :github (nil)
+    #   a github ORG/REPO pair (e.g. chef/chef) that will be transformed to https://github.com/ORG/REPO.git
     # @option val [String] :url (nil)
     #   general URL
     # @option val [String] :path (nil)
     #   a fully-qualified local file system path
     # @option val [String] :md5 (nil)
-    #   the checksum of the downloaded artifact
+    #   the MD5 checksum of the downloaded artifact
+    # @option val [String] :sha1 (nil)
+    #   the SHA1 checksum of the downloaded artifact
+    # @option val [String] :sha256 (nil)
+    #   the SHA256 checksum of the downloaded artifact
+    # @option val [String] :sha512 (nil)
+    #   the SHA512 checksum of the downloaded artifact
+    #
+    # Only used in net_fetcher:
+    #
     # @option val [String] :cookie (nil)
     #   a cookie to set
     # @option val [String] :warning (nil)
     #   a warning message to print when downloading
+    # @option val [Symbol] :extract (nil)
+    #   either :tar, :lax_tar :seven_zip
+    #
+    # Only used in path_fetcher:
+    #
+    # @option val [Hash] :options (nil)
+    #   flags/options that are passed through to file_syncer in path_fetcher
+    #
+    # Only used in git_fetcher:
+    #
+    # @option val [Boolean] :submodules (false)
+    #   clone git submodules
+    #
+    # If multiple checksum types are provided, only the strongest will be used.
     #
     # @return [Hash]
     #
@@ -235,7 +307,15 @@ module Omnibus
             "be a kind of `Hash', but was `#{val.class.inspect}'")
         end
 
-        extra_keys = val.keys - [:git, :path, :url, :md5, :cookie, :warning, :unsafe, :options]
+        val = canonicalize_source(val)
+
+        extra_keys = val.keys - [
+          :git, :path, :url, # fetcher types
+          :md5, :sha1, :sha256, :sha512, # hash type - common to all fetchers
+          :cookie, :warning, :unsafe, :extract, # used by net_fetcher
+          :options, # used by path_fetcher
+          :submodules # used by git_fetcher
+        ]
         unless extra_keys.empty?
           raise InvalidValue.new(:source,
             "only include valid keys. Invalid keys: #{extra_keys.inspect}")
@@ -251,18 +331,20 @@ module Omnibus
         @source.merge!(val)
       end
 
-      apply_overrides(:source)
+      override = canonicalize_source(overrides[:source])
+      apply_overrides(:source, override)
     end
     expose :source
 
     #
-    # Set or retieve the {#default_version} of the software to build.
+    # Set or retrieve the {#default_version} of the software to build.
     #
     # @example
     #   default_version '1.2.3'
     #
     # @param [String] val
-    #   the default version to set for the software
+    #   the default version to set for the software.
+    #   For a git source, the default version may be a git ref (e.g. tag, branch name, or sha).
     #
     # @return [String]
     #
@@ -274,6 +356,66 @@ module Omnibus
       end
     end
     expose :default_version
+
+    #
+    # Set or retrieve the {#license} of the software to build.
+    #
+    # @example
+    #   license 'Apache 2.0'
+    #
+    # @param [String] val
+    #   the license to set for the software.
+    #
+    # @return [String]
+    #
+    def license(val = NULL)
+      if null?(val)
+        @license || "Unspecified"
+      else
+        @license = val
+      end
+    end
+    expose :license
+
+    #
+    # Set or retrieve the location of a {#license_file}
+    # of the software.  It can either be a relative path inside
+    # the source package or a URL.
+    #
+    #
+    # @example
+    #   license_file 'LICENSES/artistic.txt'
+    #
+    # @param [String] val
+    #   the location of the license file for the software.
+    #
+    # @return [String]
+    #
+    def license_file(file)
+      license_files << file
+      license_files.dup
+    end
+    expose :license_file
+
+    #
+    # Skip collecting licenses of transitive dependencies for this software
+    #
+    # @example
+    #   skip_transitive_dependency_licensing true
+    #
+    # @param [Boolean] val
+    #   set or reset transitive dependency license collection
+    #
+    # @return [Boolean]
+    #
+    def skip_transitive_dependency_licensing(val = NULL)
+      if null?(val)
+        @skip_transitive_dependency_licensing || false
+      else
+        @skip_transitive_dependency_licensing = val
+      end
+    end
+    expose :skip_transitive_dependency_licensing
 
     #
     # Evaluate a block only if the version matches.
@@ -291,18 +433,49 @@ module Omnibus
     # @return [String, Proc]
     #
     def version(val = NULL, &block)
+      final_version = apply_overrides(:version)
+
       if block_given?
         if val.equal?(NULL)
           raise InvalidValue.new(:version,
-            'pass a block when given a version argument')
+            "pass a block when given a version argument")
         else
-          if val == apply_overrides(:version)
-            block.call
+          if val == final_version
+            #
+            # Unfortunately we need to make a specific logic here for license files.
+            # We support multiple calls `license_file` and we support overriding the
+            # license files inside a version block. We can not differentiate whether
+            # `license_file` is being called from a version block or not. So we need
+            # to check if the license files are being overridden during the call to
+            # block.
+            #
+            # If so we use the new set, otherwise we restore the old license files.
+            #
+            current_license_files = @license_files
+            @license_files = []
+
+            yield
+
+            new_license_files = @license_files
+
+            if new_license_files.empty?
+              @license_files = current_license_files
+            end
           end
         end
       end
 
-      apply_overrides(:version)
+      return if final_version.nil?
+
+      begin
+        Chef::Sugar::Constraints::Version.new(final_version)
+      rescue ArgumentError
+        log.warn(log_key) do
+          "Version #{final_version} for software #{name} was not parseable. " \
+          'Comparison methods such as #satisfies? will not be available for this version.'
+        end
+        final_version
+      end
     end
     expose :version
 
@@ -326,19 +499,30 @@ module Omnibus
     expose :whitelist_file
 
     #
-    # The relative path inside the extracted tarball.
+    # The path relative to fetch_dir where relevant project files are
+    # stored. This applies to all sources.
+    #
+    # Any command executed in the build step are run after cwd-ing into
+    # this path. The default is to stay at the top level of fetch_dir
+    # where the source tar-ball/git repo/file/directory has been staged.
     #
     # @example
     #   relative_path 'example-1.2.3'
     #
     # @param [String] val
-    #   the relative path inside the tarball
+    #   the relative path inside the source directory. default: '.'
+    #
+    # Due to back-compat reasons, relative_path works completely
+    # differently for anything other than tar-balls/archives. In those
+    # situations, the source is checked out rooted at relative_path
+    # instead 'cause reasons.
+    # TODO: Fix this in omnibus 6.
     #
     # @return [String]
     #
     def relative_path(val = NULL)
       if null?(val)
-        @relative_path || name
+        @relative_path || "."
       else
         @relative_path = val
       end
@@ -346,12 +530,22 @@ module Omnibus
     expose :relative_path
 
     #
-    # The path where the extracted software lives.
+    # The path where the extracted software lives. All build commands
+    # associated with this software definition are run for under this path.
+    #
+    # Why is it called project_dir when this is a software definition, I hear
+    # you cry. Because history and reasons. This really is a location
+    # underneath the global omnibus source directory that you have focused
+    # into using relative_path above.
+    #
+    # These are not the only files your project fetches. They are merely the
+    # files that your project cares about. A source tarball may contain more
+    # directories that are not under your project_dir.
     #
     # @return [String]
     #
     def project_dir
-      File.expand_path("#{Config.source_dir}/#{relative_path}")
+      File.expand_path("#{fetch_dir}/#{relative_path}")
     end
     expose :project_dir
 
@@ -445,7 +639,7 @@ module Omnibus
       env ||= {}
       opts ||= {}
       compiler_flags =
-        case Ohai['platform']
+        case Ohai["platform"]
         when "aix"
           {
             "CC" => "xlc_r -q64",
@@ -459,33 +653,67 @@ module Omnibus
         when "mac_os_x"
           {
             "LDFLAGS" => "-L#{install_dir}/embedded/lib",
-            "CFLAGS" => "-I#{install_dir}/embedded/include",
+            "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
         when "solaris2"
-          {
-            # this override is due to a bug in libtool documented here:
-            # http://lists.gnu.org/archive/html/bug-libtool/2005-10/msg00004.html
-            "CC" => "gcc -static-libgcc",
-            "LDFLAGS" => "-R#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc",
-            "CFLAGS" => "-I#{install_dir}/embedded/include",
-          }
+          if platform_version.satisfies?("<= 5.10")
+            solaris_flags = {
+              # this override is due to a bug in libtool documented here:
+              # http://lists.gnu.org/archive/html/bug-libtool/2005-10/msg00004.html
+              "CC" => "gcc -static-libgcc",
+              "LDFLAGS" => "-R#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc",
+              "CFLAGS" => "-I#{install_dir}/embedded/include",
+            }
+          elsif platform_version.satisfies?(">= 5.11")
+            solaris_flags = {
+              "CC" => "gcc -m64 -static-libgcc",
+              "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc",
+              "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
+            }
+          end
+          solaris_flags
         when "freebsd"
           freebsd_flags = {
             "LDFLAGS" => "-L#{install_dir}/embedded/lib",
-            "CFLAGS" => "-I#{install_dir}/embedded/include",
+            "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
+          # Enable gcc version 4.9 if it is available
+          if (Ohai["os_version"].to_i <= 903000) && which("gcc49")
+            freebsd_flags["CC"] = "gcc49"
+            freebsd_flags["CXX"] = "g++49"
+          end
           # Clang became the default compiler in FreeBSD 10+
-          if Ohai['os_version'].to_i >= 1000024
-            freebsd_flags.merge!(
-              "CC" => "clang",
-              "CXX" => "clang++",
-            )
+          if Ohai["os_version"].to_i >= 1000024
+            freebsd_flags["CC"] = "clang"
+            freebsd_flags["CXX"] = "clang++"
           end
           freebsd_flags
+        when "windows"
+          arch_flag = windows_arch_i386? ? "-m32" : "-m64"
+          opt_flag = windows_arch_i386? ? "-march=i686" : "-march=x86-64"
+          {
+            "LDFLAGS" => "-L#{install_dir}/embedded/lib #{arch_flag} -fno-lto",
+            # We do not wish to enable SSE even though we target i686 because
+            # of a stack alignment issue with some libraries. We have not
+            # exactly ascertained the cause but some compiled library/binary
+            # violates gcc's assumption that the stack is going to be 16-byte
+            # aligned which is just fine as long as one is pushing 32-bit
+            # values from general purpose registers but stuff hits the fan as
+            # soon as gcc emits aligned SSE xmm register spills which generate
+            # GPEs and terminate the application very rudely with very little
+            # to debug with.
+            #
+            # TODO: This was true of our old TDM gcc 4.7 compilers. Is it still
+            # true with mingw-w64?
+            #
+            # XXX: Temporarily turning -O3 into -O2 -fno-lto to work around some
+            # weird linker issues.
+            "CFLAGS" => "-I#{install_dir}/embedded/include #{arch_flag} -O2 -fno-lto #{opt_flag}",
+          }
         else
           {
             "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib",
-            "CFLAGS" => "-I#{install_dir}/embedded/include",
+            "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
         end
 
@@ -497,27 +725,26 @@ module Omnibus
       # better.  in that case LD_RUN_PATH will probably survive whatever
       # edits the configure script does
       extra_linker_flags = {
-        "LD_RUN_PATH" => "#{install_dir}/embedded/lib"
+        "LD_RUN_PATH" => "#{install_dir}/embedded/lib",
       }
 
       if solaris2?
-        # in order to provide compatibility for earlier versions of libc on solaris 10,
-        # we need to specify a mapfile that restricts the version of system libraries
-        # used. See http://docs.oracle.com/cd/E23824_01/html/819-0690/chapter5-1.html
-        # for more information
-        # use the mapfile if it exists, otherwise ignore it
         ld_options = "-R#{install_dir}/embedded/lib"
-        mapfile_path = File.expand_path(Config.solaris_linker_mapfile, Config.project_root)
-        ld_options  << " -M #{mapfile_path}" if File.exist?(mapfile_path)
+
+        if platform_version.satisfies?("<= 5.10")
+          # in order to provide compatibility for earlier versions of libc on solaris 10,
+          # we need to specify a mapfile that restricts the version of system libraries
+          # used. See http://docs.oracle.com/cd/E23824_01/html/819-0690/chapter5-1.html
+          # for more information
+          # use the mapfile if it exists, otherwise ignore it
+          mapfile_path = File.expand_path(Config.solaris_linker_mapfile, Config.project_root)
+          ld_options << " -M #{mapfile_path}" if File.exist?(mapfile_path)
+        end
 
         # solaris linker can also use LD_OPTIONS, so we throw the kitchen sink against
         # the linker, to find every way to make it use our rpath. This is also required
         # to use the aforementioned mapfile.
-        extra_linker_flags.merge!(
-          {
-            "LD_OPTIONS" => ld_options
-          }
-        )
+        extra_linker_flags["LD_OPTIONS"] = ld_options
       end
 
       env.merge(compiler_flags).
@@ -525,10 +752,10 @@ module Omnibus
         # always want to favor pkg-config from embedded location to not hose
         # configure scripts which try to be too clever and ignore our explicit
         # CFLAGS and LDFLAGS in favor of pkg-config info
-        merge({"PKG_CONFIG_PATH" => "#{install_dir}/embedded/lib/pkgconfig"}).
+        merge({ "PKG_CONFIG_PATH" => "#{install_dir}/embedded/lib/pkgconfig" }).
         # Set default values for CXXFLAGS and CPPFLAGS.
-        merge('CXXFLAGS' => compiler_flags['CFLAGS']).
-        merge('CPPFLAGS' => compiler_flags['CFLAGS'])
+        merge("CXXFLAGS" => compiler_flags["CFLAGS"]).
+        merge("CPPFLAGS" => compiler_flags["CFLAGS"])
     end
     expose :with_standard_compiler_flags
 
@@ -542,10 +769,25 @@ module Omnibus
     # @return [Hash]
     #
     def with_embedded_path(env = {})
-      path_value = prepend_path("#{install_dir}/bin", "#{install_dir}/embedded/bin")
+      paths = ["#{install_dir}/bin", "#{install_dir}/embedded/bin"]
+      path_value = prepend_path(paths)
       env.merge(path_key => path_value)
     end
     expose :with_embedded_path
+
+    #
+    # Returns the platform safe full path under embedded/bin directory to the
+    # given binary
+    #
+    # @param [String] bin
+    #   Name of the binary under embedded/bin
+    #
+    # @return [String]
+    #
+    def embedded_bin(bin)
+      windows_safe_path("#{install_dir}/embedded/bin/#{bin}")
+    end
+    expose :embedded_bin
 
     #
     # A PATH variable format string representing the current PATH with the
@@ -560,7 +802,7 @@ module Omnibus
       path_values = Array(paths)
       path_values << ENV[path_key]
 
-      separator = File::PATH_SEPARATOR || ':'
+      separator = File::PATH_SEPARATOR || ":"
       path_values.join(separator)
     end
     expose :prepend_path
@@ -577,6 +819,41 @@ module Omnibus
       Ohai
     end
     expose :ohai
+
+    #
+    # Downloads a software license to ship with the final build.
+    # 
+    # Licenses will be copied into {install_dir}/sources/{software_name}
+    #
+    # @param [String] name_or_url 
+    #   the name of the license to ship or a URL pointing to the license file.
+    #
+    #   Available License Names : LGPLv2, LGPLv3, PSFL, Apache, Apachev2,
+    #   GPLv2, GPLv3, ZPL
+    #
+    # @example
+    #   ship_license 'GPLv3'
+    #
+    # @example 
+    #    ship_license 'http://www.r-project.org/Licenses/GPL-3' 
+    #
+    def ship_license(name_or_url)
+      @ship_license
+    end
+    expose :ship_license
+
+    #
+    # Downloads a software source code to ship with the final build
+    #
+    # Sources will be copied into {install_dir}/sources/{software_name}
+    #
+    # @param [String] url
+    #   An URL pointing to a source code archive
+    #   
+    def ship_source(url)
+        @ship_source
+    end
+    expose :ship_source
 
     #
     # @!endgroup
@@ -616,7 +893,9 @@ module Omnibus
                                    source_type: source_type,
                                    described_version: version,
                                    locked_version: Fetcher.resolve_version(version, source),
-                                   locked_source: source})
+                                   locked_source: source,
+                                   license: license,
+      })
     end
 
     #
@@ -660,6 +939,17 @@ module Omnibus
     end
 
     #
+    # The list of license files for this software
+    #
+    # @see #license_file
+    #
+    # @return [Array<String>]
+    #
+    def license_files
+      @license_files ||= []
+    end
+
+    #
     # The path (on disk) where this software came from. Warning: this can be
     # +nil+ if a software was dynamically created!
     #
@@ -699,6 +989,24 @@ module Omnibus
     # @!endgroup
     # --------------------------------------------------
 
+    #
+    # Path to where any source is extracted to.
+    #
+    # Files in a source directory are staged underneath here. Files from
+    # a url are fetched and extracted here. Look outside this directory
+    # at your own peril.
+    #
+    # @return [String] the full absolute path to the software root fetch
+    #   directory.
+    #
+    def fetch_dir(val = NULL)
+      if null?(val)
+        @fetch_dir || File.expand_path("#{Config.source_dir}/#{name}")
+      else
+        @fetch_dir = val
+      end
+    end
+
     # @todo see comments on {Omnibus::Fetcher#without_caching_for}
     def version_guid
       fetcher.version_guid
@@ -707,33 +1015,50 @@ module Omnibus
     # Returns the version to be used in cache.
     def version_for_cache
       @version_for_cache ||= if fetcher.version_for_cache
-        fetcher.version_for_cache
-      elsif version
-        version
-      else
-        log.warn(log_key) do
-          "No version given! This is probably a bad thing. I am going to " \
-          "assume the version `0.0.0', but that is most certainly not your " \
-          "desired behavior. If git caching seems off, this is probably why."
-        end
+                               fetcher.version_for_cache
+                             elsif version
+                               version
+                             else
+                               log.warn(log_key) do
+                                 "No version given! This is probably a bad thing. I am going to " \
+                                 "assume the version `0.0.0', but that is most certainly not your " \
+                                 "desired behavior. If git caching seems off, this is probably why."
+                               end
 
-        '0.0.0'
-      end
+                               "0.0.0"
+                             end
     end
 
     #
     # The fetcher for this software
     #
+    # This is where we handle all the crazy back-compat on relative_path.
+    # All fetchers in omnibus 4 use relative_path incorrectly. net_fetcher was
+    # the only one to use to sensibly, and even then only if fetch_dir was
+    # Config.source_dir and the source was an archive. Therefore, to not break
+    # everyone ever, we will still pass project_dir for all other fetchers.
+    # There is still one issue where other omnibus software (such as the
+    # appbundler dsl) currently assume that fetch_dir the same as source_dir.
+    # Therefore, we make one extra concession - when relative_path is set in a
+    # software definition to be the same as name (a very common scenario), we
+    # land the source into the fetch directory instead of project_dir. This
+    # is to avoid fiddling with the appbundler dsl until it gets sorted out.
+    #
     # @return [Fetcher]
     #
     def fetcher
-      @fetcher ||= Fetcher.fetcher_class_for_source(self.source).new(manifest_entry, project_dir, build_dir)
+      @fetcher ||=
+        if source_type == :url && File.basename(source[:url], "?*").end_with?(*NetFetcher::ALL_EXTENSIONS)
+          Fetcher.fetcher_class_for_source(self.source).new(manifest_entry, fetch_dir, build_dir)
+        else
+          Fetcher.fetcher_class_for_source(self.source).new(manifest_entry, project_dir, build_dir)
+        end
     end
 
     #
     # The type of source specified for this software defintion.
     #
-    # @return [String]
+    # @return [Symbol]
     #
     def source_type
       if source
@@ -756,25 +1081,39 @@ module Omnibus
     # be restored (if the tag does not exist), the actual build steps are
     # executed.
     #
+    # @param [Array<#execute_pre_build, #execute_post_build>] build_wrappers
+    #   Build wrappers inject behavior before or after the software is built.
+    #   They can be any object that implements `#execute_pre_build` and
+    #   `#execute_post_build`, taking this Software as an argument. Note that
+    #   these callbacks are only triggered when the software actually gets
+    #   built; if the build is skipped by the git cache, the callbacks DO NOT
+    #   run.
+    #
     # @return [true]
     #
-    def build_me
+    def build_me(build_wrappers = [])
       if Config.use_git_caching
         if project.dirty?
           log.info(log_key) do
             "Building because `#{project.culprit.name}' dirtied the cache"
           end
-          execute_build
+          execute_build(build_wrappers)
+        elsif always_build
+          log.info(log_key) do
+            "Building because always_build is true"
+          end
+          execute_build(build_wrappers)
+          project.dirty!(self)
         elsif git_cache.restore
           log.info(log_key) { "Restored from cache" }
         else
           log.info(log_key) { "Could not restore from cache" }
-          execute_build
+          execute_build(build_wrappers)
           project.dirty!(self)
         end
       else
         log.debug(log_key) { "Forcing build because git caching is off" }
-        execute_build
+        execute_build(build_wrappers)
       end
 
       project.build_version_dsl.resolve(self)
@@ -821,12 +1160,12 @@ module Omnibus
         update_with_string(digest, builder.shasum)
         update_with_string(digest, name)
         update_with_string(digest, version_for_cache)
-        update_with_string(digest, JSON.fast_generate(overrides))
+        update_with_string(digest, FFI_Yajl::Encoder.encode(overrides))
 
         if filepath && File.exist?(filepath)
           update_with_file_contents(digest, filepath)
         else
-          update_with_string(digest, '<DYNAMIC>')
+          update_with_string(digest, "<DYNAMIC>")
         end
 
         digest.hexdigest
@@ -859,10 +1198,10 @@ module Omnibus
       # modify ENV['Path'] then it ignores that.  So, we scan ENV and returns the first
       # one that we find.
       #
-      if Ohai['platform'] == 'windows'
+      if Ohai["platform"] == "windows"
         ENV.keys.grep(/\Apath\Z/i).first
       else
-        'PATH'
+        "PATH"
       end
     end
 
@@ -870,30 +1209,50 @@ module Omnibus
     # Apply overrides in the @overrides hash that mask instance variables
     # that are set by parsing the DSL
     #
-    def apply_overrides(attr)
+    def apply_overrides(attr, override = overrides[attr])
       val = instance_variable_get(:"@#{attr}")
-      if val.is_a?(Hash) || overrides[attr].is_a?(Hash)
+      if val.is_a?(Hash) || override.is_a?(Hash)
         val ||= {}
-        override = overrides[attr] || {}
+        override ||= {}
         val.merge(override)
       else
-        overrides[attr] || val
+        override || val
       end
+    end
+
+    #
+    # Transform github -> git in source
+    #
+    def canonicalize_source(source)
+      if source.is_a?(Hash) && source[:github]
+        source = source.dup
+        source[:git] = "https://github.com/#{source[:github]}.git"
+        source.delete(:github)
+      end
+      source
     end
 
     #
     # Actually build this software, executing the steps provided in the
     # {#build} block and dirtying the cache.
     #
+    # @param [Array<#execute_pre_build, #execute_post_build>] build_wrappers
+    #   Build wrappers inject behavior before or after the software is built.
+    #   They can be any object that implements `#execute_pre_build` and
+    #   `#execute_post_build`
+    #
     # @return [void]
     #
-    def execute_build
+    def execute_build(build_wrappers)
       fetcher.clean
+
+      build_wrappers.each { |wrapper| wrapper.execute_pre_build(self) }
       builder.build
+      build_wrappers.each { |wrapper| wrapper.execute_post_build(self) }
 
       if Config.use_git_caching
         git_cache.incremental
-        log.info(log_key) { 'Dirtied the cache' }
+        log.info(log_key) { "Dirtied the cache" }
       end
     end
 

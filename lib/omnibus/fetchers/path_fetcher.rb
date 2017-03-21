@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-require 'fileutils'
+require "fileutils"
 
 module Omnibus
   class PathFetcher < Fetcher
@@ -42,17 +42,14 @@ module Omnibus
     # Clean the given path by removing the project directory.
     #
     # @return [true, false]
-    #   true if the directory was cleaned, false otherwise
+    #   true if the directory was cleaned, false otherwise.
+    #   Since we do not currently use the cache to sync files and
+    #   always fetch from source, there is no need to clean anything.
+    #   The fetch step (which needs to be called before clean) would
+    #   have already removed anything extraneous.
     #
     def clean
-      if File.exist?(project_dir)
-        log.info(log_key) { "Cleaning project directory `#{project_dir}'" }
-        FileUtils.rm_rf(project_dir)
-        fetch
-        true
-      else
-        false
-      end
+      return true
     end
 
     #
@@ -74,10 +71,14 @@ module Omnibus
     # The version for this item in the cache. The is the shasum of the directory
     # on disk.
     #
+    # This method is called *before* clean but *after* fetch. Since fetch
+    # automatically cleans, target vs. destination sha doesn't matter. Change this
+    # if that assumption changes.
+    #
     # @return [String]
     #
     def version_for_cache
-      "path:#{source_path}|shasum:#{target_shasum}"
+      "path:#{source_path}|shasum:#{destination_shasum}"
     end
 
     #
@@ -117,7 +118,7 @@ module Omnibus
     # @return [String]
     #
     def target_shasum
-      @target_shasum ||= digest_directory(project_dir, :sha256)
+      @target_shasum ||= digest_directory(project_dir, :sha256, source_options)
     end
 
     #
@@ -126,7 +127,7 @@ module Omnibus
     # @return [String]
     #
     def destination_shasum
-      @destination_shasum ||= digest_directory(source_path, :sha256)
+      @destination_shasum ||= digest_directory(source_path, :sha256, source_options)
     end
   end
 end

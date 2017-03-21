@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-require 'erb'
+require "erb"
 
 module Omnibus
   module Templating
@@ -40,7 +40,7 @@ module Omnibus
     #   the list of variables to pass to the template
     #
     def render_template(source, options = {})
-      destination = options.delete(:destination) || source.chomp('.erb')
+      destination = options.delete(:destination) || source.chomp(".erb")
 
       mode      = options.delete(:mode) || 0644
       variables = options.delete(:variables) || {}
@@ -52,11 +52,18 @@ module Omnibus
           "Unknown option(s): #{options.keys.map(&:inspect).join(', ')}"
       end
 
-      template = ERB.new(File.read(source), nil, '-')
-      struct   = Struct.new(*variables.keys).new(*variables.values)
-      result   = template.result(struct.instance_eval { binding })
+      template = ERB.new(File.read(source), nil, "-")
 
-      File.open(destination, 'w', mode) do |file|
+      struct =
+        if variables.empty?
+          Struct.new("Empty")
+        else
+          Struct.new(*variables.keys).new(*variables.values)
+        end
+
+      result = template.result(struct.instance_eval { binding })
+
+      File.open(destination, "w", mode) do |file|
         file.write(result)
       end
 

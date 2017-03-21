@@ -14,14 +14,16 @@
 # limitations under the License.
 #
 
-require 'fileutils'
-require 'uber-s3'
+require "fileutils"
+require "omnibus/s3_helpers"
 
 module Omnibus
   class S3Cache
     include Logging
+    extend Digestable
 
     class << self
+      include S3Helpers
       #
       # List all software in the cache.
       #
@@ -41,7 +43,7 @@ module Omnibus
       # @return [Array<String>]
       #
       def keys
-        bucket.objects('/').map(&:key)
+        bucket.objects.map(&:key)
       end
 
       #
@@ -70,16 +72,19 @@ module Omnibus
 
           key     = key_for(software)
           fetcher = software.fetcher
-          content = IO.read(fetcher.downloaded_file)
 
           log.info(log_key) do
             "Caching '#{fetcher.downloaded_file}' to '#{Config.s3_bucket}/#{key}'"
           end
 
-          client.store(key, content,
-            access: :public_read,
-            content_md5: software.fetcher.checksum
-          )
+          # Fetcher has already verified the downloaded file in software.fetch.
+          # Compute the md5 from scratch because the fetcher may have been
+          # specified with a different hashing algorithm.
+          md5 = digest(fetcher.downloaded_file, :md5)
+
+          File.open(fetcher.downloaded_file, "rb") do |file|
+            store_object(key, file, md5, "public-read")
+          end
         end
 
         true
@@ -102,7 +107,7 @@ module Omnibus
       # @private
       #
       # The key with which to cache the package on S3. This is the name of the
-      # package, the version of the package, and its checksum.
+      # package, the version of the package, and its md5 checksum.
       #
       # @example
       #   "zlib-1.2.6-618e944d7c7cd6521551e30b32322f4a"
@@ -121,7 +126,7 @@ module Omnibus
         end
 
         unless software.fetcher.checksum
-          raise InsufficientSpecification.new('source md5 checksum', software)
+          raise InsufficientSpecification.new("source md5 checksum", software)
         end
 
         "#{software.name}-#{software.version}-#{software.fetcher.checksum}"
@@ -129,33 +134,13 @@ module Omnibus
 
       private
 
-      #
-      # The client to connect to S3 with.
-      #
-      # @return [UberS3::Client]
-      #
-      def client
-        @client ||= UberS3.new(
-          access_key:        Config.s3_access_key,
-          secret_access_key: Config.s3_secret_key,
-          bucket:            Config.s3_bucket,
-          adapter:           :net_http,
-        )
-      end
-
-      #
-      # The bucket where the objects live.
-      #
-      # @return [UberS3::Bucket]
-      #
-      def bucket
-        @bucket ||= begin
-          if client.exists?('/')
-            client.bucket
-          else
-            client.connection.put('/')
-          end
-        end
+      def s3_configuration
+        {
+          region:               Config.s3_region,
+          access_key_id:        Config.s3_access_key,
+          secret_access_key:    Config.s3_secret_key,
+          bucket_name:          Config.s3_bucket,
+        }
       end
 
       #

@@ -21,18 +21,18 @@ module Omnibus
     # @return [Hash]
     SCRIPT_MAP = {
       # Default Omnibus naming
-      preinst:  'pre',
-      postinst: 'post',
-      prerm:    'preun',
-      postrm:   'postun',
+      preinst:  "pre",
+      postinst: "post",
+      prerm:    "preun",
+      postrm:   "postun",
       # Default RPM naming
-      pre:          'pre',
-      post:         'post',
-      preun:        'preun',
-      postun:       'postun',
-      verifyscript: 'verifyscript',
-      pretans:      'pretans',
-      posttrans:    'posttrans',
+      pre:          "pre",
+      post:         "post",
+      preun:        "preun",
+      postun:       "postun",
+      verifyscript: "verifyscript",
+      pretans:      "pretans",
+      posttrans:    "posttrans",
     }.freeze
 
     id :rpm
@@ -61,10 +61,16 @@ module Omnibus
       # extra_package_file '/path/to/foo.txt' #=> /tmp/BUILD/path/to/foo.txt
       project.extra_package_files.each do |file|
         parent      = File.dirname(file)
-        destination = File.join("#{staging_dir}/BUILD", parent)
 
-        create_directory(destination)
-        copy_file(file, destination)
+        if File.directory?(file)
+          destination = File.join("#{staging_dir}/BUILD", file)
+          create_directory(destination)
+          FileSyncer.sync(file, destination)
+        else
+          destination = File.join("#{staging_dir}/BUILD", parent)
+          create_directory(destination)
+          copy_file(file, destination)
+        end
       end
     end
 
@@ -116,10 +122,10 @@ module Omnibus
     #
     def vendor(val = NULL)
       if null?(val)
-        @vendor || 'Omnibus <omnibus@getchef.com>'
+        @vendor || "Omnibus <omnibus@getchef.com>"
       else
         unless val.is_a?(String)
-          raise InvalidValue.new(:vendor, 'be a String')
+          raise InvalidValue.new(:vendor, "be a String")
         end
 
         @vendor = val
@@ -141,16 +147,39 @@ module Omnibus
     #
     def license(val = NULL)
       if null?(val)
-        @license || 'unknown'
+        @license || project.license
       else
         unless val.is_a?(String)
-          raise InvalidValue.new(:license, 'be a String')
+          raise InvalidValue.new(:license, "be a String")
         end
 
         @license = val
       end
     end
     expose :license
+
+    #
+    # Sets or return the epoch for this package
+    #
+    # @example
+    #   epoch 1
+    # @param [Integer] val
+    #   the epoch number
+    #
+    # @return [Integer]
+    #   the epoch of the current package
+    def epoch(val = NULL)
+      if null?(val)
+        @epoch || NULL
+      else
+        unless val.is_a?(Integer)
+          raise InvalidValue.new(:epoch, 'be an Integer')
+        end
+
+        @epoch = val
+      end
+    end
+    expose :epoch
 
     #
     # Set or return the priority for this package.
@@ -166,10 +195,10 @@ module Omnibus
     #
     def priority(val = NULL)
       if null?(val)
-        @priority || 'extra'
+        @priority || "extra"
       else
         unless val.is_a?(String)
-          raise InvalidValue.new(:priority, 'be a String')
+          raise InvalidValue.new(:priority, "be a String")
         end
 
         @priority = val
@@ -191,16 +220,41 @@ module Omnibus
     #
     def category(val = NULL)
       if null?(val)
-        @category || 'default'
+        @category || "default"
       else
         unless val.is_a?(String)
-          raise InvalidValue.new(:category, 'be a String')
+          raise InvalidValue.new(:category, "be a String")
         end
 
         @category = val
       end
     end
     expose :category
+
+    #
+    # Set or return the dist_tag for this package
+    #
+    # The Dist Tag for this RPM package as per the Fedora packaging guidlines.
+    #
+    # @see http://fedoraproject.org/wiki/Packaging:DistTag
+    #
+    # @example
+    #   dist_tag ".#{Omnibus::Metadata.platform_shortname}#{Omnibus::Metadata.platform_version}"
+    #
+    # @param [String] val
+    #   the dist_tag for this package
+    #
+    # @return [String]
+    #   the dist_tag for this package
+    #
+    def dist_tag(val = NULL)
+      if null?(val)
+        @dist_tag || ".#{Omnibus::Metadata.platform_shortname}#{Omnibus::Metadata.platform_version}"
+      else
+        @dist_tag = val
+      end
+    end
+    expose :dist_tag
 
     #
     # @!endgroup
@@ -210,7 +264,11 @@ module Omnibus
     # @return [String]
     #
     def package_name
-      "#{safe_base_package_name}-#{safe_version}-#{safe_build_iteration}#{dist_tag}.#{safe_architecture}.rpm"
+      if dist_tag
+        "#{safe_base_package_name}-#{safe_version}-#{safe_build_iteration}#{dist_tag}.#{safe_architecture}.rpm"
+      else
+        "#{safe_base_package_name}-#{safe_version}-#{safe_build_iteration}.#{safe_architecture}.rpm"
+      end
     end
 
     #
@@ -219,7 +277,7 @@ module Omnibus
     # @return [String]
     #
     def build_dir
-      @build_dir ||= File.join(staging_dir, 'BUILD')
+      @build_dir ||= File.join(staging_dir, "BUILD")
     end
 
     #
@@ -232,13 +290,35 @@ module Omnibus
     end
 
     #
-    # Exclude directories from the spec that are owned by the filesystem package:
+    # Directories owned by the filesystem package:
     # http://fedoraproject.org/wiki/Packaging:Guidelines#File_and_Directory_Ownership
     #
     # @return [Array]
     #
     def filesystem_directories
-      @filesystem_directories ||= IO.readlines(resource_path('filesystem_list')).map! { |dirname| dirname.chomp }
+      @filesystem_directories ||= IO.readlines(resource_path("filesystem_list")).map { |f| f.chomp }
+    end
+
+    #
+    # Mark filesystem directories with ownership and permissions specified in the filesystem package
+    # https://git.fedorahosted.org/cgit/filesystem.git/plain/filesystem.spec
+    #
+    # @return [String]
+    #
+    def mark_filesystem_directories(fsdir)
+      # Workaround for datadog-agent: do not list `filesystem` directories in the package because some packages
+      # installed by default on some distros have a complete disregard for the permissions defined by their
+      # own `filesystem` pkg, and then conflict with the datadog-agent pkg
+      # Example: the `service-nanny` pkg on Amazon Linux EMR, which defines `755` perms on `/usr/bin`
+      if fsdir.eql?("/") || fsdir.eql?("/usr/bin") || fsdir.eql?("/usr/lib") || fsdir.eql?("/usr/share/empty")
+        # return "%dir %attr(0555,root,root) #{fsdir}"
+        return ""
+      elsif filesystem_directories.include?(fsdir)
+        # return "%dir %attr(0755,root,root) #{fsdir}"
+        return ""
+      else
+        return "%dir #{fsdir}"
+      end
     end
 
     #
@@ -262,61 +342,64 @@ module Omnibus
       # Get a list of all files
       files = FileSyncer.glob("#{build_dir}/**/*")
                 .map    { |path| build_filepath(path) }
+                .reject { |path| path.empty? }
 
-      render_template(resource_path('spec.erb'),
+      render_template(resource_path("spec.erb"),
         destination: spec_file,
         variables: {
-          name:           safe_base_package_name,
-          version:        safe_version,
-          iteration:      safe_build_iteration,
-          vendor:         vendor,
-          license:        license,
-          dist_tag:       dist_tag,
-          architecture:   safe_architecture,
-          maintainer:     project.maintainer,
-          homepage:       project.homepage,
-          description:    project.description,
-          priority:       priority,
-          category:       category,
-          conflicts:      project.conflicts,
-          replaces:       project.replaces,
-          dependencies:   project.runtime_dependencies,
-          user:           project.package_user,
-          group:          project.package_group,
-          scripts:        scripts,
-          config_files:   config_files,
-          files:          files,
-          build_dir:      build_dir,
+          name:            safe_base_package_name,
+          version:         safe_version,
+          epoch:           safe_epoch,
+          iteration:       safe_build_iteration,
+          vendor:          vendor,
+          license:         license,
+          dist_tag:        dist_tag,
+          maintainer:      project.maintainer,
+          homepage:        project.homepage,
+          description:     project.description,
+          priority:        priority,
+          category:        category,
+          conflicts:       project.conflicts,
+          replaces:        project.replaces,
+          dependencies:    project.runtime_dependencies,
+          user:            project.package_user,
+          group:           project.package_group,
+          scripts:         scripts,
+          config_files:    config_files,
+          files:           files,
+          build_dir:       build_dir,
+          platform_family: Ohai["platform_family"],
         }
       )
     end
 
     #
-    # Generate the RPM file using +rpmbuild+.  The use of the +fakeroot+ command
-    # is required so that the package is owned by +root:root+, but the build
-    # user does not need to have sudo permissions.
+    # Generate the RPM file using +rpmbuild+. Unlike debian,the +fakeroot+
+    # command is not required for the package to be owned by +root:root+. The
+    # rpmuser specified in the spec file dictates this.
     #
     # @return [void]
     #
     def create_rpm_file
-      command =  %|fakeroot rpmbuild|
-      command << %| -bb|
-      command << %| --buildroot #{staging_dir}/BUILD|
-      command << %| --define '_topdir #{staging_dir}'|
+      command =  %{rpmbuild}
+      command << %{ --target #{safe_architecture}}
+      command << %{ -bb}
+      command << %{ --buildroot #{staging_dir}/BUILD}
+      command << %{ --define '_topdir #{staging_dir}'}
 
       if signing_passphrase
         log.info(log_key) { "Signing enabled for .rpm file" }
 
         if File.exist?("#{ENV['HOME']}/.rpmmacros")
           log.info(log_key) { "Detected .rpmmacros file at `#{ENV['HOME']}'" }
-          home = ENV['HOME']
+          home = ENV["HOME"]
         else
           log.info(log_key) { "Using default .rpmmacros file from Omnibus" }
 
           # Generate a temporary home directory
           home = Dir.mktmpdir
 
-          render_template(resource_path('rpmmacros.erb'),
+          render_template(resource_path("rpmmacros.erb"),
             destination: "#{home}/.rpmmacros",
             variables: {
               gpg_name: project.maintainer,
@@ -330,7 +413,7 @@ module Omnibus
 
         with_rpm_signing do |signing_script|
           log.info(log_key) { "Creating .rpm file" }
-          shellout!("#{signing_script} \"#{command}\"", environment: { 'HOME' => home })
+          shellout!("#{signing_script} \"#{command}\"", environment: { "HOME" => home })
         end
       else
         log.info(log_key) { "Creating .rpm file" }
@@ -339,7 +422,9 @@ module Omnibus
       end
 
       FileSyncer.glob("#{staging_dir}/RPMS/**/*.rpm").each do |rpm|
-        copy_file(rpm, Config.package_dir)
+        # RPMbuild doesn't let use choose the final RPM name, it contains the epoch if the
+        # corresponding DSL was set so... let's get rid from the RPM name here :/
+        copy_file(rpm, "#{Config.package_dir}/#{rpm.split('/')[-1].sub(/\d+:/, '')}" )
       end
     end
 
@@ -349,11 +434,13 @@ module Omnibus
     # @return [String]
     #
     def build_filepath(path)
-      filepath = rpm_safe('/' + path.gsub("#{build_dir}/", ''))
-      return if config_files.include?(filepath) || filesystem_directories.include?(filepath)
-      full_path = build_dir + filepath.gsub('[%]','%')
+      filepath = rpm_safe("/" + path.gsub("#{build_dir}/", ""))
+      return if config_files.include?(filepath)
+      full_path = build_dir + filepath.gsub("[%]", "%")
+      # FileSyncer.glob quotes pathnames that contain spaces, which is a problem on el7
+      full_path.delete!('"')
       # Mark directories with the %dir directive to prevent rpmbuild from counting their contents twice.
-      return "%dir #{filepath}" if !File.symlink?(full_path) && File.directory?(full_path)
+      return mark_filesystem_directories(filepath) if !File.symlink?(full_path) && File.directory?(full_path)
       filepath
     end
 
@@ -380,7 +467,7 @@ module Omnibus
       directory   = Dir.mktmpdir
       destination = "#{directory}/sign-rpm"
 
-      render_template(resource_path('signing.erb'),
+      render_template(resource_path("signing.erb"),
         destination: destination,
         mode: 0700,
         variables: {
@@ -389,7 +476,7 @@ module Omnibus
       )
 
       # Yield the destination to the block
-      block.call(destination)
+      yield(destination)
     ensure
       remove_file(destination)
       remove_directory(directory)
@@ -417,17 +504,6 @@ module Omnibus
     end
 
     #
-    # The Dist Tag for this RPM package per the Fedora packaging guidlines.
-    #
-    # @see http://fedoraproject.org/wiki/Packaging:DistTag
-    #
-    # @return [String]
-    #
-    def dist_tag
-      ".#{Omnibus::Metadata.platform_shortname}#{Omnibus::Metadata.platform_version}"
-    end
-
-    #
     # Return the RPM-ready base package name, converting any invalid characters to
     # dashes (+-+).
     #
@@ -437,7 +513,7 @@ module Omnibus
       if project.package_name =~ /\A[a-z0-9\.\+\-]+\z/
         project.package_name.dup
       else
-        converted = project.package_name.downcase.gsub(/[^a-z0-9\.\+\-]+/, '-')
+        converted = project.package_name.downcase.gsub(/[^a-z0-9\.\+\-]+/, "-")
 
         log.warn(log_key) do
           "The `name' component of RPM package names can only include " \
@@ -461,6 +537,15 @@ module Omnibus
     end
 
     #
+    # Returns the epoch if precised.
+    #
+    # @return [String]
+    #
+    def safe_epoch
+      null?(epoch) ? '' : epoch.to_s
+    end
+
+    #
     # RPM package versions cannot contain dashes, so we will convert them to
     # underscores.
     #
@@ -476,29 +561,39 @@ module Omnibus
       #   http://rpm.org/ticket/56
       #
       if version =~ /\-/
-        converted = version.gsub('-', '~')
-
-        log.warn(log_key) do
-          "Tildes hold special significance in the RPM package versions. " \
-          "They mark a version as lower priority in RPM's version compare " \
-          "logic. We'll replace all dashes (-) with tildes (~) so pre-release" \
-          "versions get sorted earlier then final versions. Converting" \
-          "`#{project.build_version}' to `#{converted}'."
+        if Ohai["platform_family"] == "wrlinux"
+          converted = version.tr("-", "_") #WRL has an elderly RPM version
+          log.warn(log_key) do
+            "Omnibus replaces dashes (-) with tildes (~) so pre-release " \
+            "versions get sorted earlier than final versions.  However, the " \
+            "version of rpmbuild on Wind River Linux does not support this. " \
+            "All dashes will be replaced with underscores (_). Converting " \
+            "`#{project.build_version}' to `#{converted}'."
+          end
+        else
+          converted = version.tr("-", "~")
+          log.warn(log_key) do
+            "Tildes hold special significance in the RPM package versions. " \
+            "They mark a version as lower priority in RPM's version compare " \
+            "logic. We'll replace all dashes (-) with tildes (~) so pre-release" \
+            "versions get sorted earlier then final versions. Converting" \
+            "`#{project.build_version}' to `#{converted}'."
+          end
         end
 
         version = converted
       end
 
-      if version =~ /\A[a-zA-Z0-9\.\+\~]+\z/
+      if version =~ /\A[a-zA-Z0-9\.\+\:\~]+\z/
         version
       else
-        converted = version.gsub(/[^a-zA-Z0-9\.\+\~]+/, '_')
+        converted = version.gsub(/[^a-zA-Z0-9\.\+\:\~]+/, "_")
 
         log.warn(log_key) do
           "The `version' component of RPM package names can only include " \
           "alphabetical characters (a-z, A-Z), numbers (0-9), dots (.), " \
-          "plus signs (+), tildes (~) and underscores (_). Converting " \
-          "`#{project.build_version}' to `#{converted}'."
+          "plus signs (+), tildes (~), colons (:) and underscores (_). " \
+          "Converting `#{project.build_version}' to `#{converted}'."
         end
 
         converted
@@ -511,16 +606,42 @@ module Omnibus
     # @return [String]
     #
     def safe_architecture
-      case Ohai['kernel']['machine']
-      when 'armv6l'
-        if Ohai['platform'] == 'pidora'
-          'armv6hl'
+      case Ohai["kernel"]["machine"]
+      when "i686"
+        "i386"
+      when "armv6l"
+        if Ohai["platform"] == "pidora"
+          "armv6hl"
         else
-          'armv6l'
+          "armv6l"
         end
       else
-        Ohai['kernel']['machine']
+        Ohai["kernel"]["machine"]
       end
+    end
+
+    #
+    # Install the specified packages
+    #
+    # @return [void]
+    #
+    def install(packages, enablerepo = NULL)
+      if null?(enablerepo)
+        enablerepo_string = ''
+      else
+        enablerepo_string = "--disablerepo='*' --enablerepo='#{enablerepo}'"
+      end
+      shellout!('yum clean expire-cache')
+      shellout!("yum -y #{enablerepo_string} install #{packages}")
+    end
+
+    #
+    # Remove the specified package
+    #
+    # @return [void]
+    #
+    def remove(packages)
+      `yum -y remove #{packages}`
     end
   end
 end

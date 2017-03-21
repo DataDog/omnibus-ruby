@@ -1,13 +1,15 @@
 Feature: omnibus publish
-  Scenario: Overriding publishing platform
-    * I run `omnibus publish artifactory fake * --platform debian`
+  Scenario: Providing platform mappings file
+    * I have a platform mappings file named "platform_mappings.json"
+    * I run `omnibus publish artifactory fake * --platform-mappings platform_mappings.json`
     * the output should contain:
       """
-      Publishing platform has been overriden to 'debian'
+      Publishing will be performed using provided platform mappings.
       """
-  Scenario: Overriding publishing platform version
-    * I run `omnibus publish artifactory fake * --platform-version 7`
+
+  Scenario: When a user provides the deprecated `--version-manifest` flag
+    * I run `omnibus publish artifactory fake * --version-manifest /fake/path/version-manifest.json`
     * the output should contain:
       """
-      Publishing platform version has been overriden to '7'
+      The `--version-manifest' option has been deprecated. Version manifest data is now part of the `*.metadata.json' file
       """

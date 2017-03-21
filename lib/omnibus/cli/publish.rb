@@ -18,19 +18,27 @@ module Omnibus
   class Command::Publish < Command::Base
     namespace :publish
 
-    # These options are useful for publish packages that were built for a
-    # paticluar platform/version and tested on another platform/version.
+    # This option is useful for publish packages that were built for a
+    # particular platform/version but tested on other platform/versions.
     #
     # For example, one might build on Ubuntu 10.04 and test/publish on
-    # Ubuntu 11.04, 12.04 and Debian 7.
+    # Ubuntu 10.04, 12.04, and 14.04.
     #
-    # If these options are used with the glob pattern support all packages
-    # will be published to the same platform/version.
-    class_option :platform,
-      desc: 'The platform to publish for',
+    # @example JSON
+    #   {
+    #     "ubuntu-10.04": [
+    #       "ubuntu-10.04",
+    #       "ubuntu-12.04",
+    #       "ubuntu-14.04"
+    #     ]
+    #   }
+    #
+    class_option :platform_mappings,
+      desc: "The optional platform mappings JSON file to publish with",
       type: :string
-    class_option :platform_version,
-      desc: 'The platform version to publish for',
+
+    class_option :version_manifest,
+      desc: "Path to the version-manifest.json file to publish with",
       type: :string
 
     #
@@ -40,10 +48,14 @@ module Omnibus
     #
     method_option :acl,
       type: :string,
-      desc: 'The accessibility of the uploaded packages',
-      enum: %w(public private),
-      default: 'private'
-    desc 's3 BUCKET PATTERN', 'Publish to an S3 bucket'
+      desc: "The accessibility of the uploaded packages",
+      enum: %w{public private},
+      default: "private"
+    method_option :region,
+      type: :string,
+      desc: "The region in which the bucket is located",
+      default: "us-east-1"
+    desc "s3 BUCKET PATTERN", "Publish to an S3 bucket"
     def s3(bucket, pattern)
       options[:bucket] = bucket
       publish(S3Publisher, pattern, options)
@@ -54,8 +66,20 @@ module Omnibus
     #
     #   $ omnibus publish artifactory libs-omnibus-local pkg/chef*
     #
-    desc 'artifactory REPOSITORY PATTERN', 'Publish to an Artifactory instance'
+    method_option :build_record,
+      type: :boolean,
+      desc: "Optionally create an Artifactory build record for the published artifacts",
+      default: true
+    method_option :properties,
+      type: :hash,
+      desc: "Properites to attach to published artifacts",
+      default: {}
+    desc "artifactory REPOSITORY PATTERN", "Publish to an Artifactory instance"
     def artifactory(repository, pattern)
+      Omnibus.logger.deprecated("ArtifactoryPublisher") do
+        "The `--version-manifest' option has been deprecated. Version manifest data is now part of the `*.metadata.json' file"
+      end if options[:version_manifest]
+
       options[:repository] = repository
       publish(ArtifactoryPublisher, pattern, options)
     end
@@ -68,8 +92,12 @@ module Omnibus
     # @return [void]
     #
     def publish(klass, pattern, options)
+      if options[:platform_mappings]
+        options[:platform_mappings] = FFI_Yajl::Parser.parse(File.read(File.expand_path(options[:platform_mappings])))
+      end
+
       klass.publish(pattern, options) do |package|
-        say("Uploaded '#{package.name}'", :green)
+        say("Published '#{package.name}' for #{package.metadata[:platform]}-#{package.metadata[:platform_version]}", :green)
       end
     end
   end

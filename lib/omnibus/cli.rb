@@ -14,8 +14,9 @@
 # limitations under the License.
 #
 
-require 'thor'
-require 'omnibus'
+require "thor"
+require "omnibus"
+require "ffi_yajl"
 
 module Omnibus
   class CLI < Command::Base
@@ -54,7 +55,7 @@ module Omnibus
       end
     end
 
-    map %w(-v --version) => 'version'
+    map %w{-v --version} => "version"
 
     #
     # Build an Omnibus project or software definition.
@@ -69,7 +70,7 @@ module Omnibus
       desc: "Use the given manifest when downloading software sources.",
       type: :string,
       default: nil
-    desc 'build PROJECT', 'Build the given Omnibus project'
+    desc "build PROJECT", "Build the given Omnibus project"
     def build(name)
       manifest = if @options[:use_manifest]
                    Omnibus::Manifest.from_file(@options[:use_manifest])
@@ -83,25 +84,44 @@ module Omnibus
       project.build
 
       if @options[:output_manifest]
-        FileUtils.mkdir_p('pkg')
-        File.open(::File.join('pkg', 'version-manifest.json'), 'w') do |f|
-          f.write(JSON.pretty_generate(project.built_manifest.to_hash))
+        FileUtils.mkdir_p("pkg")
+        File.open(::File.join("pkg", "version-manifest.json"), "w") do |f|
+          f.write(FFI_Yajl::Encoder.encode(project.built_manifest.to_hash))
         end
       end
     end
 
-
-    register(Command::ChangeLog, 'changelog', 'changelog [COMMAND]', 'Create and view changelogs')
-    CLI.tasks['changelog'].options = Command::ChangeLog.class_options
+    register(Command::ChangeLog, "changelog", "changelog [COMMAND]", "Create and view changelogs")
+    CLI.tasks["changelog"].options = Command::ChangeLog.class_options
 
     #
     # Generate a version manifest for the given project definition
     #
     #   $ omnibus manifest PROJECT
     #
-    desc 'manifest PROJECT', 'Print a manifest for the given Omnibus project'
+    method_option :os,
+      desc: "An os name in Ohai form. Defaults to the current os.",
+      type: :string
+    method_option :platform_family,
+      desc: "A platform family string in Ohai form. Defaults to the current platform_family.",
+      type: :string
+    method_option :platform,
+      desc: "A platform string in Ohai form. Defaults to the current platform.",
+      type: :string
+    method_option :platform_version,
+      desc: "A platform version string in Ohai form. Defaults to the current platform.",
+      type: :string
+    method_option :architecture,
+      desc: "The target architecture: x86, x64, powerpc. Defaults to the current architecture."
+    desc "manifest PROJECT", "Print a manifest for the given Omnibus project"
     def manifest(name)
-      puts JSON.pretty_generate(Project.load(name).built_manifest.to_hash)
+      # Override ohai information
+      Ohai["os"] = @options[:os] if @options[:os]
+      Ohai["platform_family"] = @options[:platform_family] if @options[:platform_family]
+      Ohai["platform"] = @options[:platform] if @options[:platform]
+      Ohai["platform_version"] = @options[:platform_version] if @options[:platform_version]
+      Ohai["kernel"]["machine"] = @options[:architecture] if @options[:architecture]
+      puts FFI_Yajl::Encoder.encode(Project.load(name).built_manifest.to_hash, pretty: true)
     end
 
     #
@@ -109,36 +129,36 @@ module Omnibus
     #
     #   $ omnibus cache list
     #
-    register(Command::Cache, 'cache', 'cache [COMMAND]', 'Manage the cache')
-    CLI.tasks['cache'].options = Command::Cache.class_options
+    register(Command::Cache, "cache", "cache [COMMAND]", "Manage the cache")
+    CLI.tasks["cache"].options = Command::Cache.class_options
 
     #
     # Clean the Omnibus project.
     #
     #   $ omnibus clean chefdk
     #
-    register(Cleaner, 'clean', 'clean PROJECT', 'Clean the Omnibus project')
-    CLI.tasks['clean'].options = Cleaner.class_options
+    register(Cleaner, "clean", "clean PROJECT", "Clean the Omnibus project")
+    CLI.tasks["clean"].options = Cleaner.class_options
 
     #
     # Initialize a new Omnibus project.
     #
     #   $ omnibus new NAME
     #
-    register(Generator, 'new', 'new NAME', 'Initialize a new Omnibus project')
-    CLI.tasks['new'].options = Generator.class_options
+    register(Generator, "new", "new NAME", "Initialize a new Omnibus project")
+    CLI.tasks["new"].options = Generator.class_options
 
     #
     # List the Omnibus projects available from "here".
     #
     #   $ omnibus list
     #
-    desc 'list', 'List the Omnibus projects'
+    desc "list", "List the Omnibus projects"
     def list
       if Omnibus.projects.empty?
-        say('There are no Omnibus projects!')
+        say("There are no Omnibus projects!")
       else
-        say('Omnibus projects:')
+        say("Omnibus projects:")
         Omnibus.projects.sort.each do |project|
           say("  * #{project.name} (#{project.build_version})")
         end
@@ -150,15 +170,15 @@ module Omnibus
     #
     #   $ omnibus publish s3 pkg/*chef*
     #
-    register(Command::Publish, 'publish', 'publish [COMMAND]', 'Publish Omnibus packages to a backend')
-    CLI.tasks['publish'].options = Command::Publish.class_options
+    register(Command::Publish, "publish", "publish [COMMAND]", "Publish Omnibus packages to a backend")
+    CLI.tasks["publish"].options = Command::Publish.class_options
 
     #
     # Display version information.
     #
     #   $ omnibus version
     #
-    desc 'version', 'Display version information', hide: true
+    desc "version", "Display version information", hide: true
     def version
       say("Omnibus v#{Omnibus::VERSION}")
     end

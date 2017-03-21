@@ -16,21 +16,23 @@
 
 module Omnibus
   class ManifestEntry
-    attr_reader :locked_version, :locked_source, :source_type, :described_version, :name
+    attr_reader :locked_version, :locked_source, :source_type, :described_version, :name, :license
     def initialize(name, manifest_data)
       @name = name
       @locked_version = manifest_data[:locked_version]
       @locked_source = manifest_data[:locked_source]
       @source_type = manifest_data[:source_type]
       @described_version = manifest_data[:described_version]
+      @license = manifest_data[:license]
     end
 
     def to_hash
       {
-        "locked_version" => @locked_version,
-        "locked_source" => @locked_source,
-        "source_type" => @source_type,
-        "described_version" => @described_version
+        locked_version: @locked_version,
+        locked_source: @locked_source,
+        source_type: @source_type,
+        described_version: @described_version,
+        license: @license,
       }
     end
 

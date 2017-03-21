@@ -28,9 +28,10 @@ module Omnibus
         path = File.join(*paths)
 
         FileUtils.mkdir_p(File.dirname(path))
+        FileUtils.rm(path) if File.exist?(path)
 
         if block
-          File.open(path, 'wb') { |f| f.write(block.call) }
+          File.open(path, "wb") { |f| f.write(yield) }
         else
           FileUtils.touch(path)
         end
@@ -38,8 +39,17 @@ module Omnibus
         path
       end
 
-      def create_link(a, b)
-        FileUtils.ln_s(a, b)
+      def create_link(src, dest)
+        # Windows has no symlinks. Documentation seems to suggest that
+        # ln will create hard-links - so attempt to elicit the behavior
+        # we want using hard-links.  If your test happens to fail even
+        # with this, consider what semantics you actually wish to have
+        # on windows and refactor your test or code.
+        if windows?
+          FileUtils.ln(src, dest) unless File.exist?(dest)
+        else
+          FileUtils.ln_s(src, dest) unless File.exist?(dest)
+        end
       end
     end
   end

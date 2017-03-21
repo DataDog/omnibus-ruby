@@ -36,34 +36,58 @@ module Omnibus
     attr_reader :source
 
     #
-    # The exact upstream version that a fetcher should fetch. For
-    # sources that allow aliases (branch name, tags, etc). Users
+    # The exact upstream version that a fetcher should fetch.
+    #
+    # @return [String]
+    #
+    # For sources that allow aliases (branch name, tags, etc). Users
     # should use the class method resolve_version to determine this
     # before constructing a fetcher.
-    #
     attr_reader :resolved_version
 
     #
-    # The path where extracted software should live.
+    # The upstream version as described before resolution.
+    #
+    # @return [String]
+    #
+    # This will usually be the same as +resolved_version+ but may
+    # refer toa remote ref name or tag for a source such as git.
+    attr_reader :described_version
+
+    #
+    # The path where fetched software should live.
+    #
+    # Only files under this directory are modified. If the source to fetch
+    # is a directory, it is staged rooted here. If it's a file, it's copied
+    # underneath this directory. If it's a tarball, it's extracted here. If
+    # it's a repo, its checkout is rooted here. You get the idea.
+    #
+    # It's named project_dir instead of extract_dir/extract_path because of
+    # legacy reasons. This has nothing to do with project definitions or the
+    # underlying relative_path for a software definition (except for legacy
+    # behavior).
     #
     # @return [String]
     #
     attr_reader :project_dir
     attr_reader :build_dir
 
-
     #
     # Create a new Fetcher object from the given software.
     #
-    # @param [Software] software
+    # The parameters correspond to the relevant portions of a software
+    # definition that a fetcher needs access to. This avoids strongly coupling
+    # the software object with all fetchers.
     #
-    # To preserve the original interface, this still takes a software-like
-    # argument, but to avoid coupling with the software object, we pull out
-    # what we need and don't touch it again.
+    # @param [ManifestEntry] manifest_entry
+    # @param [String] project_dir
+    # @param [String] build_dir
+    #
     def initialize(manifest_entry, project_dir, build_dir)
       @name    = manifest_entry.name
       @source  = manifest_entry.locked_source
       @resolved_version = manifest_entry.locked_version
+      @described_version = manifest_entry.described_version
       @project_dir = project_dir
       @build_dir = build_dir
     end

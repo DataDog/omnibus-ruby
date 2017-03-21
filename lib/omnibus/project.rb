@@ -15,11 +15,11 @@
 # limitations under the License.
 #
 
-require 'time'
-require 'json'
-require 'omnibus/manifest'
-require 'omnibus/manifest_entry'
-require 'omnibus/reports'
+require "time"
+require "ffi_yajl"
+require "omnibus/manifest"
+require "omnibus/manifest_entry"
+require "omnibus/reports"
 
 module Omnibus
   class Project
@@ -30,7 +30,7 @@ module Omnibus
       #
       # @return [Project]
       #
-      def load(name, manifest=nil)
+      def load(name, manifest = nil)
         loaded_projects[name] ||= begin
           filepath = Omnibus.project_path(name)
 
@@ -47,6 +47,13 @@ module Omnibus
           instance.load_dependencies
           instance
         end
+      end
+
+      #
+      # Reset cached project information.
+      #
+      def reset!
+        @loaded_projects = nil
       end
 
       private
@@ -70,7 +77,7 @@ module Omnibus
     include Sugarable
     include Util
 
-    def initialize(filepath = nil, manifest=nil)
+    def initialize(filepath = nil, manifest = nil)
       @filepath = filepath
       @manifest = manifest
     end
@@ -98,7 +105,7 @@ module Omnibus
     #
     def name(val = NULL)
       if null?(val)
-        @name || raise(MissingRequiredAttribute.new(self, :name, 'hamlet'))
+        @name || raise(MissingRequiredAttribute.new(self, :name, "hamlet"))
       else
         @name = val
       end
@@ -170,9 +177,9 @@ module Omnibus
     #
     def install_dir(val = NULL)
       if null?(val)
-        @install_dir || raise(MissingRequiredAttribute.new(self, :install_dir, '/opt/chef'))
+        @install_dir || raise(MissingRequiredAttribute.new(self, :install_dir, "/opt/chef"))
       else
-        @install_dir = val.gsub('\\', '/').squeeze('/').chomp('/')
+        @install_dir = val.tr('\\', "/").squeeze("/").chomp("/")
       end
     end
     expose :install_dir
@@ -190,16 +197,16 @@ module Omnibus
     #
     def default_root
       if windows?
-        'C:'
+        "C:"
       else
-        '/opt'
+        "/opt"
       end
     end
     expose :default_root
 
     #
     # Path to the +/files+ directory in the omnibus project. This directory can
-    # contain arbritary files used by the project.
+    # contain arbitrary files used by the project.
     #
     # @example
     #   patch = File.join(files_path, 'rubygems', 'patch.rb')
@@ -228,7 +235,7 @@ module Omnibus
     #
     def maintainer(val = NULL)
       if null?(val)
-        @maintainer || raise(MissingRequiredAttribute.new(self, :maintainer, 'Chef Software, Inc.'))
+        @maintainer || raise(MissingRequiredAttribute.new(self, :maintainer, "Chef Software, Inc."))
       else
         @maintainer = val
       end
@@ -251,7 +258,7 @@ module Omnibus
     #
     def homepage(val = NULL)
       if null?(val)
-        @homepage || raise(MissingRequiredAttribute.new(self, :homepage, 'https://www.getchef.com'))
+        @homepage || raise(MissingRequiredAttribute.new(self, :homepage, "https://www.getchef.com"))
       else
         @homepage = val
       end
@@ -360,7 +367,7 @@ module Omnibus
     #
     def build_version(val = NULL, &block)
       if block && !null?(val)
-        raise Error, 'You cannot specify additional parameters to ' \
+        raise Error, "You cannot specify additional parameters to " \
           '#build_version when a block is given!'
       end
 
@@ -375,7 +382,6 @@ module Omnibus
       end
     end
     expose :build_version
-
 
     #
     # Set or retrieve the git revision of the omnibus
@@ -430,7 +436,7 @@ module Omnibus
     #
     def package(id, &block)
       unless block
-        raise InvalidValue.new(:package, 'have a block')
+        raise InvalidValue.new(:package, "have a block")
       end
 
       packagers[id] << block
@@ -483,7 +489,7 @@ module Omnibus
     #
     def package_user(val = NULL)
       if null?(val)
-        @package_user || 'root'
+        @package_user || "root"
       else
         @package_user = val
       end
@@ -530,7 +536,7 @@ module Omnibus
     #
     def package_group(val = NULL)
       if null?(val)
-        @package_group || Ohai['root_group'] || 'root'
+        @package_group || Ohai["root_group"] || "root"
       else
         @package_group = val
       end
@@ -619,6 +625,33 @@ module Omnibus
     end
     expose :runtime_dependency
 
+    # Add package(s) that this project extends.
+    #
+    # Use this to avoid packaging many files and libraries already included by
+    # the extended projects.
+    # This means that the project will rely on the extended packages to be
+    # installed to behave as expected.
+    # Extending a project is similar to running `apt-get install packages` before the
+    # project build, and `apt-get purge packages` before the packaging
+    #
+
+    # @example
+    #   extends_packages 'datadog-agent dd-check-mysql' 'datadog'
+    #
+    # @param [String] packages
+    #   the name of the extended packages
+    # @param [String] enablerepo
+    #   set if a specific repository needs to be enabled (`--enablerepo` for rpm)
+    #
+    # @return [Array<String>]
+    #   the list of extended packages
+    #
+    def extends_packages(packages, enablerepo = NULL)
+      extended_packages << [packages, enablerepo]
+      extended_packages.dup
+    end
+    expose :extends_packages
+
     #
     # Add a new exclusion pattern for a list of files or folders to exclude
     # when making the package.
@@ -692,6 +725,70 @@ module Omnibus
     expose :ohai
 
     #
+    # Set or retrieve the {#license} of the project.
+    #
+    # @example
+    #   license 'Apache 2.0'
+    #
+    # @param [String] val
+    #   the license to set for the project.
+    #
+    # @return [String]
+    #
+    def license(val = NULL)
+      if null?(val)
+        @license || "Unspecified"
+      else
+        @license = val
+      end
+    end
+    expose :license
+
+    #
+    # Set or retrieve the location of the {#license_file}
+    # of the project.  It can either be a relative path inside
+    # the project source directory or a URL.
+    #
+    #
+    # @example
+    #   license_file 'LICENSES/artistic.txt'
+    #
+    # @param [String] val
+    #   the location of the license file for the project.
+    #
+    # @return [String]
+    #
+    def license_file(val = NULL)
+      if null?(val)
+        @license_file
+      else
+        @license_file = val
+      end
+    end
+    expose :license_file
+
+    #
+    # Location of license file that omnibus will create and that will contain
+    # the information about the license of the project plus the details about
+    # the licenses of the software components included in the project.
+    #
+    # If no path is specified  install_dir/LICENSE is used.
+    #
+    # @example
+    #   license_file_path
+    #
+    # @return [String]
+    #
+    def license_file_path(path = NULL)
+      if null?(path)
+        @license_file_path || File.join(install_dir, "LICENSE")
+      else
+        @license_file_path = File.join(install_dir, path)
+      end
+    end
+    expose :license_file_path
+
+    #
     # Location of json-formated version manifest, written at at the
     # end of the build. If no path is specified
     # +install_dir+/version-manifest.json is used.
@@ -705,7 +802,7 @@ module Omnibus
       if null?(path)
         @json_manifest_path || File.join(install_dir, "version-manifest.json")
       else
-        @json_manifest_path=path
+        @json_manifest_path = path
       end
     end
     expose :json_manifest_path
@@ -809,6 +906,14 @@ module Omnibus
       @runtime_dependencies ||= []
     end
 
+    # The list of packages this project extends.
+    #
+    # @return [Array<String>]
+    #
+    def extended_packages
+      @extended_packages ||= []
+    end
+
     #
     # The list of things this project conflicts with.
     #
@@ -861,12 +966,12 @@ module Omnibus
     end
 
     #
-    # Instantiate a new instance of the best packager for this system.
+    # Instantiate new instances of the best packagers for this system.
     #
-    # @return [~Packager::Base]
+    # @return [[~Packager::Base]]
     #
-    def packager
-      @packager ||= Packager.for_current_system.new(self)
+    def packagers_for_system
+      @packagers_for_system ||= Packager.for_current_system.map { |p| p.new(self) }
     end
 
     #
@@ -983,7 +1088,7 @@ module Omnibus
     #
     def built_manifest
       log.info(log_key) { "Building version manifest" }
-      m = Omnibus::Manifest.new(build_version, build_git_revision)
+      m = Omnibus::Manifest.new(build_version, build_git_revision, license)
       softwares.each do |software|
         m.add(software.name, software.manifest_entry)
       end
@@ -1002,20 +1107,37 @@ module Omnibus
       FileUtils.rm_rf(install_dir)
       FileUtils.mkdir_p(install_dir)
 
-      softwares.each do |software|
-        software.build_me
+      packager = packagers_for_system[0]
+
+      # Install any package this project extends
+      extended_packages.each do |packages, enablerepo|
+        log.info(log_key) { "installing #{packages}" }
+        packager.install(packages, enablerepo)
+      end
+
+      Licensing.create_incrementally(self) do |license_collector|
+        softwares.each do |software|
+          software.build_me([license_collector])
+        end
       end
 
       write_json_manifest
       write_text_manifest
       HealthCheck.run!(self)
+
+      # Remove any package this project extends, after the health check ran
+      extended_packages.each do |packages, _|
+        log.info(log_key) { "removing #{packages}" }
+        packager.remove(packages)
+      end
+
       package_me
       compress_me
     end
 
     def write_json_manifest
-      File.open(json_manifest_path, 'w') do |f|
-        f.write(JSON.pretty_generate(built_manifest.to_hash))
+      File.open(json_manifest_path, "w") do |f|
+        f.write(FFI_Yajl::Encoder.encode(built_manifest.to_hash, pretty: true))
       end
     end
 
@@ -1025,7 +1147,7 @@ module Omnibus
     # omnibus-software.
     #
     def write_text_manifest
-      File.open(text_manifest_path, 'w') do |f|
+      File.open(text_manifest_path, "w") do |f|
         f.puts "#{name} #{build_version}"
         f.puts ""
         f.puts Omnibus::Reports.pretty_version_map(self)
@@ -1046,32 +1168,34 @@ module Omnibus
     #
     #
     def package_me
-      destination = File.expand_path('pkg', Config.project_root)
+      destination = File.expand_path("pkg", Config.project_root)
 
       # Create the destination directory
       unless File.directory?(destination)
         FileUtils.mkdir_p(destination)
       end
 
-      # Evaluate any packager-specific blocks, in order.
-      packagers[packager.id].each do |block|
-        packager.evaluate(&block)
+      packagers_for_system.each do |packager|
+        # Evaluate any packager-specific blocks, in order.
+        packagers[packager.id].each do |block|
+          packager.evaluate(&block)
+        end
+
+        # Run the actual packager
+        packager.run!
+
+        # Copy the generated package and metadata back into the workspace
+        package_path = File.join(Config.package_dir, packager.package_name)
+        FileUtils.cp(package_path, destination, preserve: true)
+        FileUtils.cp("#{package_path}.metadata.json", destination, preserve: true)
       end
-
-      # Run the actual packager
-      packager.run!
-
-      # Copy the generated package and metadata back into the workspace
-      package_path = File.join(Config.package_dir, packager.package_name)
-      FileUtils.cp(package_path, destination, preserve: true)
-      FileUtils.cp("#{package_path}.metadata.json", destination, preserve: true)
     end
 
     #
     #
     #
     def compress_me
-      destination = File.expand_path('pkg', Config.project_root)
+      destination = File.expand_path("pkg", Config.project_root)
 
       # Create the destination directory
       unless File.directory?(destination)
@@ -1134,12 +1258,12 @@ module Omnibus
 
         update_with_string(digest, name)
         update_with_string(digest, install_dir)
-        update_with_string(digest, JSON.fast_generate(overrides))
+        update_with_string(digest, FFI_Yajl::Encoder.encode(overrides))
 
         if filepath && File.exist?(filepath)
           update_with_file_contents(digest, filepath)
         else
-          update_with_string(digest, '<DYNAMIC>')
+          update_with_string(digest, "<DYNAMIC>")
         end
 
         digest.hexdigest
@@ -1153,12 +1277,11 @@ module Omnibus
     private
 
     def get_local_revision
-      if File.directory?(".git")
-        GitRepository.new("./").revision
-      else
-        "unknown"
-      end
+      GitRepository.new("./").revision
+    rescue StandardError
+      "unknown"
     end
+
     #
     # The log key for this project, overriden to include the name of the
     # project for build output.
