@@ -23,7 +23,7 @@ module Omnibus
     # @return [true, false]
     #
     def fetch_required?
-      !(cloned? && contains_revision?(resolved_version) && !always_fetch_tags?)
+      !(cloned? && contains_revision?(resolved_version)) || always_fetch_tags?
     end
 
     #
