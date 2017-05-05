@@ -630,10 +630,10 @@ module Omnibus
         log.info(log_key) do
           'enablerepo only works on yum based systems, not on zypper based ones'
         end
-        shellout!('sudo zypper ms -d -a')
+        shellout!('zypper ms -d -a')
         shellout!('zypper clean')
         shellout!("zypper install -y #{enablerepo}:#{packages}")
-        shellout!('sudo zypper ms -e -a')
+        shellout!('zypper ms -e -a')
       else
         if null?(enablerepo)
           enablerepo_string = ''
@@ -652,9 +652,9 @@ module Omnibus
     #
     def remove(packages)
       if Ohai["platform_family"] == 'suse'
-        shellout!('sudo zypper ms -d -a')
+        shellout!('zypper ms -d -a')
         shellout!("zypper remove -y #{packages}")
-        shellout!('sudo zypper ms -e -a')
+        shellout!('zypper ms -e -a')
       else
         shellout!("yum -y remove #{packages}")
       end
