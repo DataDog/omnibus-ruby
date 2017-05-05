@@ -649,7 +649,7 @@ module Omnibus
     # @return [void]
     #
     def remove(packages)
-      if ohai["platform_family"] == 'suse'
+      if Ohai["platform_family"] == 'suse'
         shellout!("zypper remove -y #{packages}")
       else
         shellout!("yum -y remove #{packages}")
