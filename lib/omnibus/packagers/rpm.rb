@@ -631,7 +631,7 @@ module Omnibus
           'enablerepo only works on yum based systems, not on zypper based ones'
         end
         shellout!('zypper clean')
-        shellout!("zypper install -y #{packages}")
+        shellout!("zypper install -y #{packages} --repo #{enablerepo}")
       else
         if null?(enablerepo)
           enablerepo_string = ''
