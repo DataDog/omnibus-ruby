@@ -630,10 +630,26 @@ module Omnibus
         log.info(log_key) do
           'enablerepo only works on yum based systems, not on zypper based ones'
         end
-        shellout!('zypper ms -d -a')
-        shellout!('zypper clean')
-        shellout!('zypper refresh')
-        shellout!("zypper install -y --repo #{enablerepo} #{packages}")
+        log.info(log_key) do
+          'zypper ms -d -a'
+          shellout!('zypper ms -d -a')
+        end
+        log.info(log_key) do
+          'zypper clean'
+          shellout!('zypper clean')
+        end
+        log.info(log_key) do
+          "zypper mr -e #{enablerepo}"
+          shellout!("zypper mr -e #{enablerepo}")
+        end
+        log.info(log_key) do
+          'zypper refresh'
+          shellout!('zypper refresh')
+        end
+        log.info(log_key) do
+          "zypper install -y --repo #{enablerepo} #{packages}"
+          shellout!("zypper install -y --repo #{enablerepo} #{packages}")
+        end
         shellout!('zypper ms -e -a')
       else
         if null?(enablerepo)
