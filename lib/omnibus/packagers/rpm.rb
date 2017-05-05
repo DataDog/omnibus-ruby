@@ -632,7 +632,7 @@ module Omnibus
         end
         shellout!('zypper ms -d -a')
         shellout!('zypper clean')
-        shellout!("zypper install -y #{enablerepo}:#{packages}")
+        shellout!("zypper install -y --repo #{enablerepo} #{packages}")
         shellout!('zypper ms -e -a')
       else
         if null?(enablerepo)
