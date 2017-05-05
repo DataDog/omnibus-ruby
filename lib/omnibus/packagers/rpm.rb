@@ -632,24 +632,24 @@ module Omnibus
         end
         log.info(log_key) do
           'zypper ms -d -a'
-          shellout!('zypper ms -d -a')
         end
+        shellout!('zypper ms -d -a')
         log.info(log_key) do
           'zypper clean'
-          shellout!('zypper clean')
         end
+        shellout!('zypper clean')
         log.info(log_key) do
           "zypper mr -e #{enablerepo}"
-          shellout!("zypper mr -e #{enablerepo}")
         end
+        shellout!("zypper mr -e #{enablerepo}")
         log.info(log_key) do
           'zypper refresh'
-          shellout!('zypper refresh')
         end
+        shellout!('zypper refresh')
         log.info(log_key) do
           "zypper install -y --repo #{enablerepo} #{packages}"
-          shellout!("zypper install -y --repo #{enablerepo} #{packages}")
         end
+        shellout!("zypper install -y --repo #{enablerepo} #{packages}")
         shellout!('zypper ms -e -a')
       else
         if null?(enablerepo)
