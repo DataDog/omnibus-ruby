@@ -649,7 +649,7 @@ module Omnibus
         log.info(log_key) do
           "zypper install -y --repo #{enablerepo} #{packages}"
         end
-        shellout!("zypper --non-interactive --no-gpg-checks install -y --repo #{enablerepo} #{packages}")
+        shellout!("zypper --non-interactive --no-gpg-checks --no-refresh install -y --repo #{enablerepo} #{packages}")
         shellout!('zypper ms -e -a')
       else
         if null?(enablerepo)
