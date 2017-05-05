@@ -633,23 +633,23 @@ module Omnibus
         log.info(log_key) do
           'zypper ms -d -a'
         end
-        shellout!('zypper --non-interactive --no-gpg-checks ms -d -a')
+        shellout!('zypper --non-interactive --no-gpg-checks ms -d -a || true')
         log.info(log_key) do
           'zypper clean'
         end
-        shellout!('zypper --non-interactive --no-gpg-checks clean')
+        shellout!('zypper --non-interactive --no-gpg-checks clean || true')
         log.info(log_key) do
           "zypper mr -e #{enablerepo}"
         end
-        shellout!("zypper --non-interactive --no-gpg-checks mr -e #{enablerepo}")
+        shellout!("zypper --non-interactive --no-gpg-checks mr -e #{enablerepo} || true")
         log.info(log_key) do
           'zypper refresh'
         end
-        shellout!('zypper --non-interactive --no-gpg-checks refresh')
+        shellout!('zypper --non-interactive --no-gpg-checks refresh || true')
         log.info(log_key) do
           "zypper install -y --repo #{enablerepo} #{packages}"
         end
-        shellout!("zypper --non-interactive --no-gpg-checks --no-refresh install -y --repo #{enablerepo} #{packages}")
+        shellout!("zypper --non-interactive --no-gpg-checks --no-refresh install -y --repo #{enablerepo} #{packages} || true")
         shellout!('zypper ms -e -a')
       else
         if null?(enablerepo)
