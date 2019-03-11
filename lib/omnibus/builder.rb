@@ -803,11 +803,12 @@ module Omnibus
         destination = "#{dir_name}/" + path.split("/")[-1]
         if path.start_with? "http"
           File.open(destination, "wb") do |f|
-            log.info(log_key) { "Writing license file from #{path} to #{destination}" }
+            log.info(log_key) { "Downloading license file from #{path} to #{destination}" }
             f.write HTTParty.get(path).parsed_response
           end
         else
           Dir.chdir(software.project_dir) do
+            log.info(log_key) { "Moving license file from #{path} to #{destination}" }
             FileUtils.mv(path, destination)
           end
         end
