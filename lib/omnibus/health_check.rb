@@ -498,10 +498,12 @@ module Omnibus
         rpath_regexp = Regexp.new("@rpath")
         install_dir_regexp = Regexp.new(project.install_dir)
 
+        # Do the linker's work of replacing @rpath with the rpaths defined by the library
         if linked =~ rpath_regexp
           possible_paths = []
           yield_shellout_results("otool -l #{current_library} | grep LC_RPATH -A2 | grep path | awk '{ print $2 }'") do |rpath|
-            possible_paths += linked.sub("@rpath", rpath)
+            # The rpath variable contains a \n (\r\n on Windows), so we remove it when including it in the complete path
+            possible_paths << linked.sub("@rpath", rpath.chop)
           end
         else
           possible_paths = [linked]
