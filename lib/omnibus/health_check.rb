@@ -501,6 +501,19 @@ module Omnibus
         # Do the linker's work of replacing @rpath with the rpaths defined by the library
         if linked =~ rpath_regexp
           possible_paths = []
+          # Find what are the library's rpaths by looking at the load commands.
+          # Example otool -l partial output:
+          # Load command 13
+          #          cmd LC_LOAD_DYLIB
+          #      cmdsize 56
+          #         name /usr/lib/libSystem.B.dylib (offset 24)
+          #   time stamp 2 Thu Jan  1 01:00:02 1970
+          #      current version 1238.60.2
+          # compatibility version 1.0.0
+          # Load command 14
+          #          cmd LC_RPATH
+          #      cmdsize 48
+          #         name /opt/datadog-agent/embedded/lib (offset 12)
           yield_shellout_results("otool -l #{current_library} | grep LC_RPATH -A2 | grep path | awk '{ print $2 }'") do |rpath|
             # The rpath variable contains a \n (\r\n on Windows), so we remove it when including it in the complete path
             possible_paths << linked.sub("@rpath", rpath.chop)
