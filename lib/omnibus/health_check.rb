@@ -482,10 +482,12 @@ module Omnibus
       whitelist_libs = MAC_WHITELIST_LIBS
 
       whitelist_libs.each do |reg|
+        log.info(log_key) { "  --> Whitelist lib: #{reg}" }
         safe ||= true if reg.match(name)
       end
 
       whitelist_files.each do |reg|
+        log.info(log_key) { "  --> Whitelist file: #{reg}" }
         safe ||= true if reg.match(current_library)
       end
 
