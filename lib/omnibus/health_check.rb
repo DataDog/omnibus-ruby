@@ -489,9 +489,10 @@ module Omnibus
         safe ||= true if reg.match(current_library)
       end
 
-      log.debug(log_key) { "  --> Dependency: #{name}" }
-      log.debug(log_key) { "  --> Provided by: #{linked}" }
-
+      log.info(log_key) { "  --> Dependency: #{name}" }
+      log.info(log_key) { "  --> Library: #{current_library}" }
+      log.info(log_key) { "  --> Provided by: #{linked}" }
+      log.info(log_key) { "  --> Whitelisted: #{safe}" }
       linked_present = false
 
       if !safe
