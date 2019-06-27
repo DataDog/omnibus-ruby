@@ -482,19 +482,16 @@ module Omnibus
       whitelist_libs = MAC_WHITELIST_LIBS
 
       whitelist_libs.each do |reg|
-        log.info(log_key) { "  --> Whitelist lib: #{reg}" }
         safe ||= true if reg.match(name)
       end
 
       whitelist_files.each do |reg|
-        log.info(log_key) { "  --> Whitelist file: #{reg}" }
         safe ||= true if reg.match(current_library)
       end
 
-      log.info(log_key) { "  --> Dependency: #{name}" }
-      log.info(log_key) { "  --> Library: #{current_library}" }
-      log.info(log_key) { "  --> Provided by: #{linked}" }
-      log.info(log_key) { "  --> Whitelisted: #{safe}" }
+      log.debug(log_key) { "  --> Dependency: #{name}" }
+      log.debug(log_key) { "  --> Provided by: #{linked}" }
+
       linked_present = false
 
       if !safe
@@ -522,6 +519,7 @@ module Omnibus
             # The rpath variable contains a \n (\r\n on Windows), so we remove it when including it in the complete path
             possible_paths << linked.sub("@rpath", rpath.chop)
           end
+        # Do the linker's work of replacing @loader_path by the directory the library that's using the dependency is in
         elsif linked =~ loader_path_regexp
           loader_path = File.dirname(current_library)
           possible_paths = [linked.sub("@loader_path", loader_path)]
