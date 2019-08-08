@@ -43,6 +43,7 @@ module Omnibus
   autoload :Generator,        "omnibus/generator"
   autoload :GitCache,         "omnibus/git_cache"
   autoload :HealthCheck,      "omnibus/health_check"
+  autoload :Stripper,         "omnibus/strip"
   autoload :Instrumentation,  "omnibus/instrumentation"
   autoload :Library,          "omnibus/library"
   autoload :Logger,           "omnibus/logger"

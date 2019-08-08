@@ -108,6 +108,27 @@ module Omnibus
     end
 
     #
+    # The list of debug paths from the project and softwares.
+    #
+    # @return [Array<String>]
+    #
+    def debug_package_paths
+      project.library.components.inject([]) do |array, component|
+        array += component.debug_package_paths
+        array
+      end
+    end
+
+    #
+    # Returns whether or not this is a debug build.
+    #
+    # @return boolean
+    #
+    def debug_build?
+      not debug_package_paths.empty?
+    end
+
+    #
     # @!group DSL methods
     # --------------------------------------------------
 
@@ -178,6 +199,15 @@ module Omnibus
     #
     def staging_dir
       @staging_dir ||= Dir.mktmpdir(project.package_name)
+    end
+
+    #
+    # The path to the debug staging dir on disk.
+    #
+    # @return [String]
+    #
+    def staging_dbg_dir
+      @staging_dbg_dir ||= Dir.mktmpdir("#{project.package_name}-dbg")
     end
 
     #
