@@ -641,7 +641,7 @@ module Omnibus
     #   dependency 'quz'
     #
     # @param [String] val
-    #   the pathi to include in the debug build
+    #   the path to include in the debug build
     #
     # @return [Array<String>]
     #   the list of dependencies
