@@ -31,7 +31,7 @@ module Omnibus
     end
 
     #
-    # The project to stripper.
+    # The project to strip.
     #
     # @return [Project]
     #
