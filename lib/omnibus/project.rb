@@ -837,23 +837,6 @@ module Omnibus
     expose :license_file_path
 
     #
-    # Location of license file that omnibus will create and that will contain
-    # the information about the license of the project plus the details about
-    # the licenses of the software components included in the project.
-    #
-    # If no path is specified  install_dir/LICENSE is used.
-    #
-    # @example
-    #   license_file_path
-    #
-    # @return [String]
-    #
-    def stripped_symbols_path()
-      @stripped_symbols_path = "symbols-#{build_git_revision}"
-    end
-    expose :stripped_symbols_path
-
-    #
     # Method to enable whether or not a build should be stripped.
     #
     # @example

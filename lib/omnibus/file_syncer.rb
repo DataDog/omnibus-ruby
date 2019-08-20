@@ -50,7 +50,8 @@ module Omnibus
     # @option options [String, Array<String>] :exclude
     #   a file, folder, or globbing pattern of files to ignore when syncing
     # @option options [String, Array<String>] :include
-    #   a file, folder, or globbing pattern of files to ignore when syncing
+    #   a file, folder, or globbing pattern of files that has to be matched
+    #   when syncing
     #
     # @return [Array<String>]
     #   the list of all files

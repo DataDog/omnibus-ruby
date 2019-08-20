@@ -55,10 +55,7 @@ module Omnibus
 
       # Create the Debian file directory
       create_directory(debian_dir)
-      if debug_build?
-        # Create the Debian file directory
-        create_directory(debian_dbg_dir)
-      end
+      create_directory(debian_dbg_dir) if debug_build?
     end
 
     build do
@@ -266,10 +263,7 @@ module Omnibus
     # @return [void]
     #
     def write_control_file(debug = false)
-      dst_dir = debian_dir
-      if debug
-        dst_dir = debian_dbg_dir
-      end
+      dst_dir = debug ? debian_dbg_dir : debian_dir
 
       pkg_dependencies = project.runtime_dependencies
       if debug

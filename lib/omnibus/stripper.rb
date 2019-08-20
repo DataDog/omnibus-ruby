@@ -38,21 +38,23 @@ module Omnibus
     attr_reader :project
 
     #
-    # Run the strippers against the given project. It is assumed that the
+    # Run the stripper against the given project. It is assumed that the
     # project has already been built.
     #
     # @param [Project] project
-    #   the project to health check
+    #   the project to strip
     #
     def initialize(project)
       @project = project
     end
 
     #
-    # Run the given health check. Healthcheks are skipped on Windows.
+    # Run the stripping operation. Stripping currently only available on windows.
+    #
+    # TODO: implement other platforms windows, macOS, etc
     #
     # @return [true]
-    #   if the healthchecks pass
+    #   if the checks pass
     #
     def run!
       measure("Stripping time") do
@@ -77,7 +79,7 @@ module Omnibus
       log.debug(log_key) { "stripping on linux: #{path}" }
       symboldir = File.join(path, ".debug")
       log.debug(log_key) { "putting symbols here: #{symboldir}" }
-      read_output_lines("find #{path}/ -type f -exec file {} \\; | grep 'ELF' | cut -f1 -d:") do |elf|
+      yield_shellout_results("find #{path}/ -type f -exec file {} \\; | grep 'ELF' | cut -f1 -d:") do |elf|
         log.debug(log_key) { "processing: #{elf}" }
         source = elf.strip
         debugfile = "#{source}.dbg"
@@ -95,13 +97,6 @@ module Omnibus
     end
 
     private
-
-    def read_output_lines(command)
-      cmd = shellout(command)
-      cmd.stdout.each_line do |line|
-        yield line
-      end
-    end
 
   end
 end
