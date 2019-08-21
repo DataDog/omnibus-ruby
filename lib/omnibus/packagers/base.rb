@@ -178,6 +178,7 @@ module Omnibus
         # this directory so developers can go poke around and figure out why the
         # build failed.
         remove_directory(staging_dir)
+        remove_directory(staging_dbg_dir) if debug_build?
       end
     end
 
