@@ -1225,7 +1225,7 @@ module Omnibus
       write_text_manifest
       HealthCheck.run!(self)
 
-      Stripper.run!(self)
+      Stripper.run!(self) if strip_build
 
       # Remove any package this project extends, after the health check ran
       extended_packages.each do |packages, _|
