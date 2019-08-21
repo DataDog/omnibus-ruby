@@ -60,25 +60,21 @@ module Omnibus
       excludes = Array(options[:exclude]).map do |exclude|
         [exclude, "#{exclude}/*"]
       end.flatten
-      # puts "finding files with exclude filter: #{excludes}..."
 
       includes = Array(options[:include]).map do |include|
         [include, "#{include}/*"]
       end.flatten
-      # puts "finding files with include filter: #{includes}..."
 
 
       source_files = glob(File.join(source, "**/*"))
       source_files = source_files.reject do |source_file|
         basename = relative_path_for(source_file, source)
-        # puts "exclude file #{source_file} with basename: #{basename} ?"
         excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH) }
       end
 
       if not includes.empty?
         source_files = source_files.reject do |source_file|
           basename = relative_path_for(source_file, source)
-          # puts "include file #{source_file} with basename: #{basename} ?"
           includes.none? { |include| File.fnmatch?(include, basename, File::FNM_DOTMATCH) }
         end
       end
@@ -123,7 +119,6 @@ module Omnibus
       # Copy over the filtered source files
       source_files.each do |source_file|
         relative_path = relative_path_for(source_file, source)
-        # puts "syncing file #{source_file.strip}..."
 
         # Create the parent directory
         parent = File.join(destination, File.dirname(relative_path))
