@@ -113,10 +113,13 @@ module Omnibus
     # @return [Array<String>]
     #
     def debug_package_paths
-      project.library.components.inject([]) do |array, component|
+      paths = project.library.components.inject([]) do |array, component|
         array += component.debug_package_paths
         array
       end
+
+      paths += project.debug_package_paths
+      paths
     end
 
     #
