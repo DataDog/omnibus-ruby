@@ -17,7 +17,8 @@
 module Omnibus
   class Packager::WindowsBase < Packager::Base
     DEFAULT_TIMESTAMP_SERVERS = ["http://timestamp.digicert.com",
-                                 "http://timestamp.verisign.com/scripts/timestamp.dll"]
+                                 "http://timestamp.verisign.com/scripts/timestamp.dll",
+                                 "http://timestamp.globalsign.com/scripts/timstamp.dll"]
 
     #
     # Set the signing certificate name
