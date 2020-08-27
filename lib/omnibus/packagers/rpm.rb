@@ -110,8 +110,29 @@ module Omnibus
     # --------------------------------------------------
 
     #
-    # Set or return the signing passphrase. If this value is provided,
-    # Omnibus will attempt to sign the RPM.
+    # Set or return the the gpg key name to use while signing.
+    # If this value is provided, Omnibus will attempt to sign the RPM.
+    #
+    # @example
+    #   gpg_key_name 'My key (my.address@here.com)'
+    #
+    # @param [String] val
+    #   the name of the gpg key
+    #
+    # @return [String]
+    #
+    def gpg_key_name(val = NULL)
+      if null?(val)
+        @gpg_key_name
+      else
+        @gpg_key_name = val
+      end
+    end
+    expose :gpg_key_name
+
+    #
+    # Set or return the signing passphrase.
+    # Required if gpg_key_name is set.
     #
     # @example
     #   signing_passphrase "foo"
@@ -119,12 +140,15 @@ module Omnibus
     # @param [String] val
     #   the passphrase to use when signing the RPM
     #
+    # @raise [MissingRequiredAttribute] if a value was not set before being
+    #   subsequently retrieved
+    #
     # @return [String]
     #   the RPM-signing passphrase
     #
     def signing_passphrase(val = NULL)
       if null?(val)
-        @signing_passphrase
+        @signing_passphrase || raise(MissingRequiredAttribute.new(self, :signing_passphrase, "foo"))
       else
         @signing_passphrase = val
       end
@@ -428,7 +452,7 @@ module Omnibus
       command << %{ --buildroot #{build_dir(debug)}}
       command << %{ --define '_topdir #{stage}'}
 
-      if signing_passphrase
+      if gpg_key_name
         log.info(log_key) { "Signing enabled for .rpm file" }
 
         if File.exist?("#{ENV['HOME']}/.rpmmacros")
@@ -443,7 +467,7 @@ module Omnibus
           render_template(resource_path("rpmmacros.erb"),
                           destination: "#{home}/.rpmmacros",
                           variables: {
-                            gpg_name: project.maintainer,
+                            gpg_name: gpg_key_name,
                             gpg_path: "#{ENV['HOME']}/.gnupg", # TODO: Make this configurable
                           })
         end
