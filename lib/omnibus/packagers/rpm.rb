@@ -140,15 +140,12 @@ module Omnibus
     # @param [String] val
     #   the passphrase to use when signing the RPM
     #
-    # @raise [MissingRequiredAttribute] if a value was not set before being
-    #   subsequently retrieved
-    #
     # @return [String]
     #   the RPM-signing passphrase
     #
     def signing_passphrase(val = NULL)
       if null?(val)
-        @signing_passphrase || raise(MissingRequiredAttribute.new(self, :signing_passphrase, "foo"))
+        @signing_passphrase
       else
         @signing_passphrase = val
       end
@@ -452,8 +449,11 @@ module Omnibus
       command << %{ --buildroot #{build_dir(debug)}}
       command << %{ --define '_topdir #{stage}'}
 
-      if gpg_key_name
+      if gpg_key_name || signing_passphrase
         log.info(log_key) { "Signing enabled for .rpm file" }
+
+        key_name = gpg_key_name || project.maintainer
+        log.info(log_key) { "Using gpg key #{key_name}" }
 
         if File.exist?("#{ENV['HOME']}/.rpmmacros")
           log.info(log_key) { "Detected .rpmmacros file at `#{ENV['HOME']}'" }
@@ -467,7 +467,7 @@ module Omnibus
           render_template(resource_path("rpmmacros.erb"),
                           destination: "#{home}/.rpmmacros",
                           variables: {
-                            gpg_name: gpg_key_name,
+                            gpg_name: key_name,
                             gpg_path: "#{ENV['HOME']}/.gnupg", # TODO: Make this configurable
                           })
         end
