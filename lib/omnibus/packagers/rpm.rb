@@ -114,7 +114,7 @@ module Omnibus
     # If this value is provided, Omnibus will attempt to sign the RPM.
     #
     # @example
-    #   gpg_key_name 'My key (my.address@here.com)'
+    #   gpg_key_name 'My key <my.address@here.com>'
     #
     # @param [String] val
     #   the name of the GPG key to use during RPM signing
