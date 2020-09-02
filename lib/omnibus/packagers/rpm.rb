@@ -117,9 +117,10 @@ module Omnibus
     #   gpg_key_name 'My key (my.address@here.com)'
     #
     # @param [String] val
-    #   the name of the gpg key
+    #   the name of the GPG key to use during RPM signing
     #
     # @return [String]
+    #   the RPM signing GPG key name
     #
     def gpg_key_name(val = NULL)
       if null?(val)
