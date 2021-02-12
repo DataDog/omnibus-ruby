@@ -456,29 +456,37 @@ module Omnibus
         key_name = gpg_key_name || project.maintainer
         log.info(log_key) { "Using gpg key #{key_name}" }
 
-        if File.exist?("#{ENV['HOME']}/.rpmmacros")
-          log.info(log_key) { "Detected .rpmmacros file at `#{ENV['HOME']}'" }
-          home = ENV["HOME"]
-        else
-          log.info(log_key) { "Using default .rpmmacros file from Omnibus" }
-
-          # Generate a temporary home directory
-          home = Dir.mktmpdir
-
-          render_template(resource_path("rpmmacros.erb"),
-                          destination: "#{home}/.rpmmacros",
-                          variables: {
-                            gpg_name: key_name,
-                            gpg_path: "#{ENV['HOME']}/.gnupg", # TODO: Make this configurable
-                          })
-        end
-
         command << " --sign"
         command << " #{spec_file(debug)}"
 
-        with_rpm_signing do |signing_script|
+        with_rpm_signing do |passphrase_file|
+          if File.exist?("#{ENV['HOME']}/.rpmmacros")
+            log.info(log_key) { "Detected .rpmmacros file at `#{ENV['HOME']}'" }
+            home = ENV["HOME"]
+          else
+            log.info(log_key) { "Using default .rpmmacros file from Omnibus" }
+
+            # Generate a temporary home directory
+            home = Dir.mktmpdir
+
+            gpg_extra_args = ""
+            rpm_gpg = shellout!("rpm --eval '%__gpg'")
+            if shellout("#{rpm_gpg.stdout} --pinentry-mode loopback </dev/null 2>&1 | grep -q pinentry-mode").exitstatus == 1
+              gpg_extra_args << " --pinentry-mode loopback"
+            end
+
+            render_template(resource_path("rpmmacros.erb"),
+                            destination: "#{home}/.rpmmacros",
+                            variables: {
+                              gpg_name: key_name,
+                              gpg_path: "#{ENV['HOME']}/.gnupg", # TODO: Make this configurable
+                              gpg_passphrase_file: passphrase_file,
+                              gpg_extra_args: gpg_extra_args,
+                            })
+          end
+
           log.info(log_key) { "Creating .rpm file" }
-          shellout!("#{signing_script} \"#{command}\"", environment: { "HOME" => home })
+          shellout!("#{command}", environment: { "HOME" => home })
         end
       else
         log.info(log_key) { "Creating .rpm file" }
@@ -535,20 +543,15 @@ module Omnibus
     # @return [String]
     #
     def with_rpm_signing(&block)
-      directory   = Dir.mktmpdir
-      destination = "#{directory}/sign-rpm"
+      directory = Dir.mktmpdir
+      passphrase_file = "#{directory}/passphrase"
+      File.open(passphrase_file, 'w', 0700) do |file|
+        file.write(signing_passphrase)
+      end
 
-      render_template(resource_path("signing.erb"),
-                      destination: destination,
-                      mode: 0700,
-                      variables: {
-                        passphrase: signing_passphrase,
-                      })
-
-      # Yield the destination to the block
-      yield(destination)
+      yield(passphrase_file)
     ensure
-      remove_file(destination)
+      remove_file(passphrase_file)
       remove_directory(directory)
     end
 
