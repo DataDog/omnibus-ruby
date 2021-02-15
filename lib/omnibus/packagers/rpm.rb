@@ -97,6 +97,7 @@ module Omnibus
       if rv[:major] != "4"
         raise Error.new("Only works with RPM 4")
       end
+
       fips = rv[:minor] < 14 ? true : false
 
       # Generate the spec
@@ -390,6 +391,7 @@ module Omnibus
       if match.nil?
         raise Error.new("Couldn't parse '#{version_call.stdout}' as RPM version")
       end
+
       return match
     end
 
