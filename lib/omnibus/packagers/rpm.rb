@@ -98,7 +98,7 @@ module Omnibus
         raise Error.new("Only works with RPM 4")
       end
 
-      fips = rv[:minor].to_i < 14 ? true : false
+      fips = rv[:minor].to_i >= 14 ? true : false
 
       # Generate the spec
       write_rpm_spec(fips)
