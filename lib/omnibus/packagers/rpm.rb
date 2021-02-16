@@ -482,7 +482,6 @@ module Omnibus
         key_name = gpg_key_name || project.maintainer
         log.info(log_key) { "Using gpg key #{key_name}" }
 
-        command << " --sign"
         command << " #{spec_file(debug)}"
 
         has_rpmmacros = File.exist?("#{ENV['HOME']}/.rpmmacros")
@@ -517,6 +516,7 @@ module Omnibus
 
             log.info(log_key) { "Creating .rpm file" }
             shellout!("#{command}", environment: { "HOME" => home })
+            shellout!("rpm --addsign #{stage}/RPMS/**/*.rpm")
           end
         else
           if not has_rpmmacros
