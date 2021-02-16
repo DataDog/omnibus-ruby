@@ -516,7 +516,7 @@ module Omnibus
 
             log.info(log_key) { "Creating .rpm file" }
             shellout!("#{command}", environment: { "HOME" => home })
-            shellout!("rpm --addsign #{stage}/RPMS/**/*.rpm")
+            shellout!("rpm --addsign #{stage}/RPMS/**/*.rpm", environment: { "HOME" => home })
           end
         else
           if not has_rpmmacros
