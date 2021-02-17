@@ -515,10 +515,14 @@ module Omnibus
             end
 
             log.info(log_key) { "Creating .rpm file" }
+            # We don't use `rpmbuild --sign` on newer RPM, as it is deprecated and also
+            # seems to fail for packages with a lot files, like datadog-agent, with CentOS 6
+            # version of `popt`
             shellout!("#{command}", environment: { "HOME" => home })
             shellout!("rpm --addsign #{stage}/RPMS/**/*.rpm", environment: { "HOME" => home })
           end
         else
+          command << " --sign"
           if not has_rpmmacros
             render_template(resource_path("rpmmacros.erb"),
                             destination: "#{home}/.rpmmacros",
