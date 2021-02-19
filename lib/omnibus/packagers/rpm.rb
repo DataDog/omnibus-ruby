@@ -623,7 +623,7 @@ module Omnibus
     def with_rpm_passphrase(&block)
       directory = Dir.mktmpdir
       passphrase_file = "#{directory}/passphrase"
-      File.open(passphrase_file, 'w', 0700) do |file|
+      File.open(passphrase_file, 'w', 0600) do |file|
         file.write(signing_passphrase)
       end
 
