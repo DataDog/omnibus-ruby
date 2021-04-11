@@ -382,6 +382,9 @@ module Omnibus
 
     def debug_zip_name
       # HACK: needs to match the name used in Stripper.strip_windows
+      # TODO: the debug zup on Windows should be packaged by the packager, not by the
+      # Stripper.strip_windows method, to be aligned with what's done on Linux
+      # + to remove this hack.
       "#{project.package_name}-#{project.build_version}-#{project.build_iteration}-#{Config.windows_arch}.debug.zip"
     end
 
