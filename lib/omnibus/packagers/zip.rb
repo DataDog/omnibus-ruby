@@ -104,6 +104,12 @@ module Omnibus
       zip_name
     end
 
+    # @see Base#debug_build?
+    # The zip packager doesn't support debug packaging
+    def debug_build?
+      false
+    end
+
     def zip_name
       "#{project.package_name}-#{project.build_version}-#{project.build_iteration}-#{Config.windows_arch}.zip"
     end
