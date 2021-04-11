@@ -106,6 +106,10 @@ module Omnibus
 
     # @see Base#debug_build?
     # The zip packager doesn't support debug packaging
+    # HACK: This is needed to avoid failures when the Project#package_me method tries
+    # to fetch the debug package produced by each packager,
+    # as the Windows build uses both the MSI packager (which does have a debug package) and
+    # the ZIP packager (which doesn't have a debug package).
     def debug_build?
       false
     end
