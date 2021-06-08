@@ -8,8 +8,8 @@ Installed-Size: <%= installed_size %>
 <% unless dependencies.empty? -%>
 Depends: <%= dependencies.join(', ') %>
 <% end -%>
-<% unless weak_dependencies.empty? -%>
-Recommends: <%= weak_dependencies.join(', ') %>
+<% unless recommended_dependencies.empty? -%>
+Recommends: <%= recommended_dependencies.join(', ') %>
 <% end -%>
 <% unless conflicts.empty? -%>
 Conflicts: <%= conflicts.join(', ') %>

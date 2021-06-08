@@ -33,7 +33,7 @@ Packager: <%= maintainer %>
 <% dependencies.each do |name| -%>
 Requires: <%= name %>
 <% end -%>
-<% weak_dependencies.each do |name| -%>
+<% recommended_dependencies.each do |name| -%>
 Recommends: <%= name %>
 <% end -%>
 <% conflicts.each do |name| -%>
