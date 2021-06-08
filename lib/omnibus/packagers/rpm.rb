@@ -400,7 +400,6 @@ module Omnibus
                         conflicts: project.conflicts,
                         replaces: project.replaces,
                         dependencies: pkg_dependencies,
-                        recommended_dependencies: project.runtime_recommended_dependencies,
                         user: project.package_user,
                         group: project.package_group,
                         scripts: scripts,
