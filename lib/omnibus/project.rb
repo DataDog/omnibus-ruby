@@ -850,6 +850,26 @@ module Omnibus
     expose :license
 
     #
+    # Set or retrieve additional {#third_party_licenses} of the project.
+    #
+    # @example
+    #   third_party_licenses 'LiCENSES/third-party.csv'
+    #
+    # @param [String] val
+    #   the location to the CSV file with the additional third party license list.
+    #
+    # @return [String]
+    #
+    def third_party_licenses(val = NULL)
+      if null?(val)
+        @third_party_licenses || "Unspecified"
+      else
+        @third_party_licenses = val
+      end
+    end
+    expose :third_party_licenses
+
+    #
     # Set or retrieve the location of the {#license_file}
     # of the project.  It can either be a relative path inside
     # the project source directory or a URL.
