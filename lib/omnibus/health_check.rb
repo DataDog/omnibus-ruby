@@ -557,7 +557,8 @@ module Omnibus
       current_library = nil
       bad_libs = {}
 
-      yield_shellout_results("find #{project.install_dir}/ -type f | xargs file | grep \"RISC System\" | awk -F: '{print $1}' | xargs -n 1 ldd") do |line|
+      # Executables, .so, .a and .o
+      yield_shellout_results("find #{project.install_dir}/ -type f -perm -u=x -o -perm -g=x -o -name \"*.so*\" -o -name \"*.a\" -o -name \"*.o\" | xargs file | grep -E \"RISC System|XCOFF\" | awk -F: '{print $1}' | xargs -n 1 ldd") do |line|
         case line
         when /^(.+) needs:$/
           current_library = Regexp.last_match[1]
