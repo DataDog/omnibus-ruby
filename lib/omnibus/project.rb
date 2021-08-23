@@ -835,7 +835,7 @@ module Omnibus
     # Set or retrieve additional {#third_party_licenses} of the project.
     #
     # @example
-    #   third_party_licenses 'LiCENSES/third-party.csv'
+    #   third_party_licenses 'LICENSES/third-party.csv'
     #
     # @param [String] val
     #   the location to the CSV file with the additional third party license list.
