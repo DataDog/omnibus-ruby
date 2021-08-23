@@ -839,6 +839,10 @@ module Omnibus
     #
     # @param [String] val
     #   the location to the CSV file with the additional third party license list.
+    #   The expected format to the CSV is as follows:
+    #
+    #   Component,Origin,License
+    #   core,"github.com/DataDog/foo/bar",BSD-3-Clause
     #
     # @return [String]
     #
