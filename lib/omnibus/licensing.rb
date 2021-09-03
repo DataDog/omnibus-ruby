@@ -414,6 +414,10 @@ module Omnibus
         end
 
         licenses.each do |name, url|
+          if url.nil?
+            licensing_warning("Unknown standard license for software '#{name}'.")
+            next
+          end
           output_file = license_package_location("THIRD-PARTY", name)
           begin
             download_file!(url, output_file, enable_progress_bar: false)
