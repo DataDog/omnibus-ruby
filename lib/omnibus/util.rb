@@ -136,7 +136,7 @@ module Omnibus
       yield
     rescue Exception => e
       raise e unless retried_exceptions.any? { |eclass| e.is_a?(eclass) }
- 
+
       if retries != 0
         log.info(log_key) { "Retrying failed #{logstr} due to #{e} (#{retries} retries left)..." }
         retries -= 1
