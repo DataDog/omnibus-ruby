@@ -18,7 +18,6 @@ require "fileutils"
 
 module Omnibus
   class PathFetcher < Fetcher
-
     @@source_path_mutexes = {}
     @@source_path_mutexes.default_proc = proc { Mutex.new }
 
