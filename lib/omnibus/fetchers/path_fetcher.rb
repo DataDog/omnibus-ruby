@@ -18,7 +18,7 @@ require "fileutils"
 
 module Omnibus
   class PathFetcher < Fetcher
-    @@source_path_mutexes = Hash.new { |h,k| h[k] = Mutex.new }
+    @@source_path_mutexes = Hash.new { |h, k| h[k] = Mutex.new }
 
     #
     # Fetch if the local directory checksum is different than the path directory
