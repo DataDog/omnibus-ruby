@@ -402,7 +402,6 @@ module Omnibus
     # them and drops them into the project output directory.
     #
     def third_party_licenses_collector
-
       licenses = {}
 
       if project.third_party_licenses && project.third_party_licenses != "Unspecified"
@@ -706,7 +705,7 @@ EOH
       "AAL" => "https://opensource.org/licenses/AALAAL",                  # Attribution Assurance Licenses
       "BSD-3-Clause" => "https://opensource.org/licenses/BSD-3-Clause",   # BSD 3-Clause "New" or "Revised" License
       "BSD-2-Clause" => "https://opensource.org/licenses/BSD-2-Clause",   # BSD 2-Clause "Simplified" or "FreeBSD" License
-      "BSD-1-Clause"  => "https://opensource.org/licenses/BSD-1-Clause",  # BSD 1-Clause
+      "BSD-1-Clause" => "https://opensource.org/licenses/BSD-1-Clause",   # BSD 1-Clause
       "BSL-1.0" => "https://opensource.org/licenses/BSL-1.0",             # Boost Software License
       "CECILL-2.1" => "https://opensource.org/licenses/CECILL-2.1",       # CeCILL License 2.1
       "CATOSL-1.1" => "https://opensource.org/licenses/CATOSL-1.1",       # Computer Associates Trusted Open Source License 1.1
