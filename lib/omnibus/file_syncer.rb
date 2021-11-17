@@ -80,7 +80,7 @@ module Omnibus
           #
           #   File.fnmatch?(".debug"), .debug/opt, File::FNM_DOTMATCH | File::FNM_PATHNAME) = false
           #   File.fnmatch?(".debug/**"), .debug/opt, File::FNM_DOTMATCH | File::FNM_PATHNAME) = true
-          #   includes.none? { |include| File.fnmatch?(include), .debug/opt, File::FNM_DOTMATCH | File::FNM_PATHNAME6) } = false
+          #   includes.none? { |include| File.fnmatch?(include), .debug/opt, File::FNM_DOTMATCH | File::FNM_PATHNAME) } = false
           #
           #   File.fnmatch?(".debug"), .debug/opt/datadog-agent, File::FNM_DOTMATCH | File::FNM_PATHNAME) = false
           #   File.fnmatch?(".debug/**"), .debug/opt/datadog-agent, File::FNM_DOTMATCH | File::FNM_PATHNAME) = false
