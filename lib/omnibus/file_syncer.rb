@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2018 Chef Software, Inc.
+# Copyright 2014 Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,6 +50,9 @@ module Omnibus
     #
     # @option options [String, Array<String>] :exclude
     #   a file, folder, or globbing pattern of files to ignore when syncing
+    # @option options [String, Array<String>] :include
+    #   a file, folder, or globbing pattern of files that has to be matched
+    #   when syncing
     #
     # @return [Array<String>]
     #   the list of all files
@@ -59,11 +62,36 @@ module Omnibus
         [exclude, "#{exclude}/**"]
       end.flatten
 
+      includes = Array(options[:include]).map do |include|
+        [include, "#{include}/**"]
+      end.flatten
+
       source_files = glob(File.join(source, "**/*"))
       source_files = source_files.reject do |source_file|
         basename = relative_path_for(source_file, source)
         excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH | File::FNM_PATHNAME) }
       end
+
+      if not includes.empty?
+        source_files = source_files.reject do |source_file|
+          basename = relative_path_for(source_file, source)
+          # File::FNM_PATHNAME Prohibit wildcards from matching a slash ('/')
+          # which means includes.none? will return true when the path includes a '/':
+          #
+          #   File.fnmatch?(".debug"), .debug/opt, File::FNM_DOTMATCH | File::FNM_PATHNAME) = false
+          #   File.fnmatch?(".debug/**"), .debug/opt, File::FNM_DOTMATCH | File::FNM_PATHNAME) = true
+          #   includes.none? { |include| File.fnmatch?(include), .debug/opt, File::FNM_DOTMATCH | File::FNM_PATHNAME6) } = false
+          #
+          #   File.fnmatch?(".debug"), .debug/opt/datadog-agent, File::FNM_DOTMATCH | File::FNM_PATHNAME) = false
+          #   File.fnmatch?(".debug/**"), .debug/opt/datadog-agent, File::FNM_DOTMATCH | File::FNM_PATHNAME) = false
+          #   includes.none? { |include| File.fnmatch?(include), .debug/opt/datadog-agent, File::FNM_DOTMATCH | File::FNM_PATHNAME) } = true
+          #
+          # As per above, we can see that it would not include any subfolder beneath the fist level of nesting.
+          includes.none? { |include| File.fnmatch?(include, basename, File::FNM_DOTMATCH) }
+        end
+      end
+
+      source_files
     end
 
     #
@@ -94,8 +122,6 @@ module Omnibus
           "`#{File.ftype(source)}'! If you just want to sync a file, use " \
           "the `copy' method instead."
       end
-
-      source_files = all_files_under(source, options)
 
       # Ensure the destination directory exists
       FileUtils.mkdir_p(destination) unless File.directory?(destination)
@@ -145,7 +171,8 @@ module Omnibus
             end
           end
         else
-          raise "Unknown file type: `File.ftype(source_file)' at `#{source_file}'!"
+          raise RuntimeError,
+                "Unknown file type: `File.ftype(source_file)' at `#{source_file}'!"
         end
       end
 
@@ -171,8 +198,6 @@ module Omnibus
       true
     end
 
-    private
-
     #
     # The relative path of the given +path+ to the +parent+.
     #
@@ -186,6 +211,8 @@ module Omnibus
     def relative_path_for(path, parent)
       Pathname.new(path).relative_path_from(Pathname.new(parent)).to_s
     end
+
+    private
 
     #
     # A list of hard link file(s) sources which have already been copied,
