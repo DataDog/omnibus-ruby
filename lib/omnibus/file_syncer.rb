@@ -123,6 +123,8 @@ module Omnibus
           "the `copy' method instead."
       end
 
+      source_files = all_files_under(source, options)
+
       # Ensure the destination directory exists
       FileUtils.mkdir_p(destination) unless File.directory?(destination)
 
