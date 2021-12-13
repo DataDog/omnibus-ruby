@@ -704,7 +704,11 @@ EOH
     end
 
     #
-    # Download the license file directly from s3 using get_object
+    # Downloads the license file from s3 using get_object.
+    #
+    # @param [Software] software
+    # @param [String] license_file
+    # @param [String] destination
     #
     def get_from_s3(software, license_file, destination)
       log.info(log_key) { "Fetching license file from S3 object `#{S3LicenseCache.key_for(software, license_file)}' in bucket `#{Config.s3_bucket}'" }

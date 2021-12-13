@@ -1,5 +1,5 @@
 #
-# Copyright 2012-2014 Chef Software, Inc.
+# Copyright 2021-present Datadog, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,14 @@ require "omnibus/download_helpers"
 require "omnibus/s3_helpers"
 
 module Omnibus
+  # Util class to take care of caching license files.
+  # This class was written to be similar to the S3Cache class, but is different enough
+  # to not be derived from it.
+  # In particular, the key_for method needs more parameters, the software
+  # list is different, the list of missing cache entries is generated with
+  # a slightly different logic (to take standard licenses and local files into
+  # account), and the cache population logic is also different (licenses do not
+  # have a fetcher).
   class S3LicenseCache
     include Logging
     extend Digestable
@@ -38,8 +46,10 @@ module Omnibus
 
       #
       # List all software licenses missing from the cache.
+      # Discards local files (which do not need to be cached), and
+      # takes into account standard licenses.
       #
-      # @return [Array<Software>]
+      # @return [Array<[Software, String]>]
       #
       def missing
         cached = keys
@@ -65,7 +75,7 @@ module Omnibus
       end
 
       #
-      # Populate the cache with the all the missing software definitions.
+      # Populate the cache with the all the missing licenses.
       #
       # @return [true]
       #
@@ -86,7 +96,7 @@ module Omnibus
             "Caching '#{downloaded_file}' to '#{Config.s3_bucket}/#{key}'"
           end
 
-          # The AWS client needs an md5 of the file that is downloaded
+          # The AWS client needs the md5 of the file that is uploaded
           md5 = digest(downloaded_file, :md5)
 
           File.open(downloaded_file, "rb") do |file|
@@ -97,6 +107,14 @@ module Omnibus
         true
       end
 
+      #
+      # Retrieves the a given license file for a software from S3
+      # and stores it in the given location.
+      #
+      # @param [Software] software
+      # @param [String] license_file
+      # @param [String] destination
+      #
       def get_object(software, license_file, destination)
         object = client.bucket(Config.s3_bucket).object(key_for(software, license_file))
         object.get(
@@ -134,11 +152,11 @@ module Omnibus
           raise InsufficientSpecification.new(:hash, software)
         end
 
-        # We add Software#shasum in the cache key. It's the more accurate way
+        # We add Software#shasum in the cache key. It's an accurate way
         # to know if a software definition changed, as it takes into account the
         # resolved version (ie. the git commit hash if the source is a git repository,
-        # the hashsum of the downloaded file if the source is a remote file), and other
-        # changes to the software definition.
+        # the hashsum of the downloaded file if the source is a remote file), the project,
+        # and all build commands run in the software definition.
         "licenses/#{software.name}-#{software.version}-#{software.shasum}/#{File.basename(license_file)}"
       end
 
@@ -182,7 +200,9 @@ module Omnibus
       #
       # The list of softwares for all Omnibus projects.
       # Contrary to S3Cache, we want all software definitions,
-      # not only the ones that use the NetFetcher.
+      # not only the ones that use the NetFetcher, as software
+      # definitions using other fetchers (PathFetcher, GitFetcher, etc.)
+      # could still use a remote license file.
       #
       # @return [Array<Software>]
       #
