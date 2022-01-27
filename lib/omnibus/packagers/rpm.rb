@@ -421,7 +421,6 @@ module Omnibus
       script_dependencies = project.runtime_script_dependencies
       if debug
         pkg_dependencies = ["#{safe_base_package_name} = #{safe_epoch}:#{safe_version}-#{safe_build_iteration}"]
-        script_dependencies = {}
       end
 
       # Get a list of all files
