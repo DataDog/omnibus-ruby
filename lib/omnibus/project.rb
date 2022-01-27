@@ -716,8 +716,8 @@ module Omnibus
     # Add a package that is a runtime dependency of a script of this project.
     #
     # @example
-    #   runtime_recommended_dependency :preinst, 'foo'
-    #   runtime_recommended_dependency :postinst, 'bar'
+    #   runtime_script_dependency :preinst, 'foo'
+    #   runtime_script_dependency :postinst, 'bar'
     #
     # @param [String] script
     #   the script that requires this runtime dependency
@@ -732,7 +732,7 @@ module Omnibus
       runtime_script_dependencies[script] << val
       runtime_script_dependencies.dup
     end
-    expose :runtime_recommended_dependency
+    expose :runtime_script_dependency
 
     # Add package(s) that this project extends.
     #
