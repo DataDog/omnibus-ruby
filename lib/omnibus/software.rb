@@ -367,7 +367,7 @@ module Omnibus
         ]
         unless extra_keys.empty?
           raise InvalidValue.new(:source,
-                                 "only include valid keys. Invalid keys: #{extra_keys.inspect}")
+                                 "only include valid keys for software '#{name}'. Invalid keys: #{extra_keys.inspect}")
         end
 
         duplicate_keys = val.keys & [:git, :path, :url]
