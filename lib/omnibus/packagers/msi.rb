@@ -22,7 +22,17 @@ module Omnibus
   class Packager::MSI < Packager::WindowsBase
     id :msi
 
+    # Override the default install dir to place the install files in
+    # the staging directory. That way we can modify it as we want and it won't
+    # impact other packagers, and Omnibus will take care of cleaning it for us after the build.
+    def install_dir
+      "#{staging_dir}\\install_dir"
+    end
+
     setup do
+      # Create a copy of the install directory
+      FileUtils.copy_entry windows_safe_path(project.install_dir), windows_safe_path(install_dir)
+
       if bundle_msi
         helper_tmp_dir = Dir.mktmpdir
         parameters.store('HelperDir', helper_tmp_dir)
@@ -67,6 +77,18 @@ module Omnibus
       copy_file(resource_path("CustomActionFastMsi.CA.dll"), staging_dir) if fast_msi
     end
 
+    def generate_embedded_archive(version)
+      safe_embedded_path = windows_safe_path(install_dir, "embedded#{version}")
+      safe_embedded_archive_path = windows_safe_path(install_dir, "embedded#{version}.7z")
+
+      shellout!(
+        <<-EOH.split.join(" ").squeeze(" ").strip
+          7z a -mx=5 -ms=on #{safe_embedded_archive_path} #{safe_embedded_path}
+      EOH
+      )
+      FileUtils.rm_rf "#{safe_embedded_path}"
+    end
+
     build do
       if signing_identity or signing_identity_file
         puts "starting signing"
@@ -101,6 +123,13 @@ module Omnibus
       # Harvest the files with heat.exe, recursively generate fragment for
       # project directory
       Dir.chdir(staging_dir) do
+        # Create the embedded zips and delete their folders
+        generate_embedded_archive(3)
+
+        if File.exist?(windows_safe_path(install_dir, "embedded2"))
+          generate_embedded_archive(2)
+        end
+
         shellout!(heat_command)
 
         # Let's also harvest our extras
