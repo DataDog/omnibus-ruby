@@ -587,7 +587,7 @@ module Omnibus
     # @return [Integer]
     default(:workers) do
       if Ohai["cpu"] && Ohai["cpu"]["total"]
-        Ohai["cpu"]["total"].to_i + 1
+        Ohai["cpu"]["total"].to_i * 2
       else
         3
       end
