@@ -27,7 +27,8 @@ module Omnibus
     # @return [true, false]
     #
     def fetch_required?
-      target_shasum != destination_shasum
+      # target_shasum != destination_shasum
+      true
     end
 
     #
@@ -61,6 +62,7 @@ module Omnibus
     #
     def fetch
       log.info(log_key) { "Copying from `#{source_path}'" }
+      raise "we are about to fetch\!"
 
       @@source_path_mutexes[source_path].synchronize {
         create_required_directories
