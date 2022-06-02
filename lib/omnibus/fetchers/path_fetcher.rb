@@ -65,7 +65,6 @@ module Omnibus
 
       @@source_path_mutexes[source_path].synchronize {
         create_required_directories
-        raise "we are about to sync #{source_path} for #{project_dir} with #{source_options}\!"
         FileSyncer.sync(source_path, project_dir, source_options)
         # Reset target shasum on every fetch
         @target_shasum = nil
