@@ -785,6 +785,10 @@ module Omnibus
           }
         end
 
+      # Some libraries (looking at you, aerospike-client-python) need
+      # EXT_CFLAGS instead of CFLAGS.
+      compiler_flags["EXT_CFLAGS"] = compiler_flags["CFLAGS"]
+
       # merge LD_RUN_PATH into the environment.  most unix distros will fall
       # back to this if there is no LDFLAGS passed to the linker that sets
       # the rpath.  the LDFLAGS -R or -Wl,-rpath will override this, but in
