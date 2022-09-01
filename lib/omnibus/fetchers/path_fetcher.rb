@@ -27,8 +27,7 @@ module Omnibus
     # @return [true, false]
     #
     def fetch_required?
-      # target_shasum != destination_shasum
-      true
+      target_shasum != destination_shasum
     end
 
     #
