@@ -492,8 +492,8 @@ module Omnibus
           # Generate a temporary home directory
           home = Dir.mktmpdir
         end
-        recent_version = rpm_version()[:minor].to_i >= 14 ? true : false
-        if recent_version
+        rpm_414_or_later = rpm_version()[:minor].to_i >= 14 ? true : false
+        if rpm_414_or_later
           with_rpm_passphrase do |passphrase_file|
             if not has_rpmmacros
               gpg_extra_args = ""
@@ -509,7 +509,7 @@ module Omnibus
                                 gpg_path: "#{ENV['HOME']}/.gnupg", # TODO: Make this configurable
                                 gpg_passphrase_file: passphrase_file,
                                 gpg_extra_args: gpg_extra_args,
-                                recent_version: true,
+                                rpm_414_or_later: true,
                               })
             end
 
@@ -528,7 +528,7 @@ module Omnibus
                             variables: {
                               gpg_name: key_name,
                               gpg_path: "#{ENV['HOME']}/.gnupg", # TODO: Make this configurable
-                              recent_version: false,
+                              rpm_414_or_later: false,
                             })
           end
 
