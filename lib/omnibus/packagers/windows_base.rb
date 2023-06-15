@@ -181,13 +181,17 @@ module Omnibus
       end
     end
 
-    def dd_wcssign(enabled)
-      unless !enabled
-        if signing_identity signing_identity_file
-          raise Error, "You cannot specify signing_identity or signing_identity_file with dd_wcssign"
+    def dd_wcssign(enabled = false)
+      if enabled
+        if signing_identity
+          raise Error, "You cannot specify signing_identity with dd_wcssign"
         end
+        if signing_identity_file
+          raise Error, "You cannot specify signing_identity_file with dd_wcssign"
+        end
+        @dd_wcssign = enabled
       end
-      @dd_wcssign = enabled
+      
       @dd_wcssign
     end
     expose :dd_wcssign
