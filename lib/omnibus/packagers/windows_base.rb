@@ -189,9 +189,10 @@ module Omnibus
         if signing_identity_file
           raise Error, "You cannot specify signing_identity_file with dd_wcssign"
         end
+
         @dd_wcssign = enabled
       end
-      
+
       @dd_wcssign
     end
     expose :dd_wcssign
