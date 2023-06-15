@@ -222,11 +222,15 @@ module Omnibus
 
       retry_block("signing with timestamp servers", [FailedToSignWindowsPackage], retries = 5, delay = 5) do
         success = false
-        timestamp_servers.each do |ts|
-          puts "signing with timestamp server: #{ts}"
-          success = try_sign(safe_package_file, ts)
-          puts "signed with timestamp server: #{ts}" if success
-          break if success
+        if dd_wcssign
+          success = try_sign(safe_package_file, NULL)
+        else
+          timestamp_servers.each do |ts|
+            puts "signing with timestamp server: #{ts}"
+            success = try_sign(safe_package_file, ts)
+            puts "signed with timestamp server: #{ts}" if success
+            break if success
+          end
         end
         raise FailedToSignWindowsPackage.new if !success
       end
