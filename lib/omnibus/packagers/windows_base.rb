@@ -181,6 +181,17 @@ module Omnibus
       end
     end
 
+    def dd_wcssign(enabled)
+      unless !enabled
+        if signing_identity signing_identity_file
+          raise Error, "You cannot specify signing_identity or signing_identity_file with dd_wcssign"
+        end
+      end
+      @dd_wcssign = enabled
+      @dd_wcssign
+    end
+    expose :dd_wcssign
+
     #
     # Iterates through available timestamp servers and tries to sign
     # the file with with each server, stopping after the first to succeed.
@@ -218,7 +229,13 @@ module Omnibus
     end
 
     def try_sign(package_file, url)
-      if signing_identity
+      if dd_wcssign
+        cmd = Array.new.tap do |arr|
+          arr << "dd-wcs"
+          arr << "sign"
+          arr << "\"#{package_file}\""
+        end.join(" ")
+      elsif signing_identity
         cmd = Array.new.tap do |arr|
           arr << "signtool.exe"
           arr << "sign /v"
