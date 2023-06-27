@@ -239,12 +239,14 @@ module Omnibus
 
     def try_sign(package_file, url)
       if dd_wcssign
+        puts "signing with dd-wcs"
         cmd = Array.new.tap do |arr|
           arr << "dd-wcs"
           arr << "sign"
           arr << "\"#{package_file}\""
         end.join(" ")
       elsif signing_identity
+        "puts signing with signtool (machine store)"
         cmd = Array.new.tap do |arr|
           arr << "signtool.exe"
           arr << "sign /v"
@@ -257,6 +259,7 @@ module Omnibus
           arr << "\"#{package_file}\""
         end.join(" ")
       elsif signing_identity_file
+        "puts signing with signtool (pfx file)"
         cmd = Array.new.tap do |arr|
           arr << "signtool.exe"
           arr << "sign /v"
