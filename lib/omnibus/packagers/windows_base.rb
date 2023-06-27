@@ -246,7 +246,7 @@ module Omnibus
           arr << "\"#{package_file}\""
         end.join(" ")
       elsif signing_identity
-        "puts signing with signtool (machine store)"
+        puts "signing with signtool (machine store)"
         cmd = Array.new.tap do |arr|
           arr << "signtool.exe"
           arr << "sign /v"
@@ -259,7 +259,7 @@ module Omnibus
           arr << "\"#{package_file}\""
         end.join(" ")
       elsif signing_identity_file
-        "puts signing with signtool (pfx file)"
+        puts "signing with signtool (pfx file)"
         cmd = Array.new.tap do |arr|
           arr << "signtool.exe"
           arr << "sign /v"
