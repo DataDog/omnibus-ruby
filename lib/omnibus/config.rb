@@ -586,7 +586,9 @@ module Omnibus
     #
     # @return [Integer]
     default(:workers) do
-      if Ohai["cpu"] && Ohai["cpu"]["total"]
+      if ENV.has_value?("OMNIBUS_WORKERS_OVERRIDE")
+        ENV["OMNIBUS_WORKERS_OVERRIDE"].to_i
+      elsif Ohai["cpu"] && Ohai["cpu"]["total"]
         Ohai["cpu"]["total"].to_i + 1
       else
         3
