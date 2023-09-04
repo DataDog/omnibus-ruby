@@ -438,7 +438,7 @@ module Omnibus
 
       # Execute the build command
       Dir.chdir(Config.package_dir) do
-        shellout!("fakeroot dpkg-deb -z9 -Zgzip -D --build #{staging_path} #{package_name(debug)}")
+        shellout!("fakeroot dpkg-deb -z9 -Zxz -D --build #{staging_path} #{package_name(debug)}")
       end
     end
 
