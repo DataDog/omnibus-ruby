@@ -214,6 +214,7 @@ module Omnibus
         configure_cmd << "--build=#{platform}"
       else
         configure_cmd << "--host=x86_64-unknown-linux-gnu"
+        configure_cmd << "--build=x86_64-linux-gnu"
       end
 
       # Accept a prefix override if provided. Can be set to '' to suppress
