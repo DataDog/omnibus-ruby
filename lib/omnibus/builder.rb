@@ -220,6 +220,7 @@ module Omnibus
       configure_cmd << "--prefix=#{prefix}" if prefix && prefix != ""
       if Config.host
         configure_cmd << "--host=#{Config.host}"
+        configure_cmd << "--build=x86_64-linux-gnu"
       end
 
       configure_cmd.concat args
