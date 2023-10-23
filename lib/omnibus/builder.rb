@@ -218,6 +218,9 @@ module Omnibus
       # this functionality.
       prefix = options.delete(:prefix) || "#{install_dir}/embedded"
       configure_cmd << "--prefix=#{prefix}" if prefix && prefix != ""
+      if Config.host
+        configure_cmd << "--host=#{Config.host}"
+      end
 
       configure_cmd.concat args
       configure_cmd = configure_cmd.join(" ").strip
@@ -241,6 +244,13 @@ module Omnibus
       cmake_cmd << "-DCMAKE_INSTALL_LIBDIR=#{libdir}" if libdir && libdir != ""
       rpath = options.delete(:rpath) || "#{prefix}/#{libdir}"
       cmake_cmd << "-DCMAKE_INSTALL_RPATH=#{rpath}" if rpath && rpath != ""
+      if Config.host
+        toolchain_file = "/opt/cmake/#{Config.host}.toolchain.cmake"
+        unless not File.exists?(toolchain_file)
+          raise "Can't find toolchain file associated with provided host (#{Config.host})"
+        end
+        cmake_cmd << ['--toolchain', toolchain_file]
+      end
       cmake_cmd.concat args
       cmake_cmd = cmake_cmd.join(" ").strip
 
