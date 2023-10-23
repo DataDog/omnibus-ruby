@@ -247,7 +247,7 @@ module Omnibus
       cmake_cmd << "-DCMAKE_INSTALL_RPATH=#{rpath}" if rpath && rpath != ""
       if Config.host
         toolchain_file = "/opt/cmake/#{Config.host}.toolchain.cmake"
-        unless not File.exists?(toolchain_file)
+        unless File.exists?(toolchain_file)
           raise "Can't find toolchain file associated with provided host (#{Config.host})"
         end
         cmake_cmd << ['--toolchain', toolchain_file]
