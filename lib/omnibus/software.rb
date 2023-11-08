@@ -783,10 +783,15 @@ module Omnibus
             "CFLAGS" => "-I#{install_dir}/embedded/include #{arch_flag} -O2 -fno-lto #{opt_flag}",
           }
         else
-          {
+          linux_flags = {
             "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -Wl,-rpath-link,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib",
             "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
+          if Config.host
+            linux_flags["CC"] = "#{Config.host}-gcc"
+            linux_flags["CXX"] = "#{Config.host}-g++"
+          end
+          linux_flags
         end
 
       # merge LD_RUN_PATH into the environment.  most unix distros will fall

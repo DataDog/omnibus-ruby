@@ -218,10 +218,10 @@ module Omnibus
       # this functionality.
       prefix = options.delete(:prefix) || "#{install_dir}/embedded"
       configure_cmd << "--prefix=#{prefix}" if prefix && prefix != ""
-      if Config.host
-        configure_cmd << "--host=#{Config.host}"
-        configure_cmd << "--build=x86_64-linux-gnu"
-      end
+      #if Config.host
+      #  configure_cmd << "--host=#{Config.host}"
+      #  configure_cmd << "--build=x86_64-linux-gnu"
+      #end
 
       configure_cmd.concat args
       configure_cmd = configure_cmd.join(" ").strip
