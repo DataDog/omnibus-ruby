@@ -164,7 +164,7 @@ module Omnibus
         raise InvalidValue.new(:skip_packager, "be TrueClass or FalseClass")
       end
 
-      @skip_package ||= val
+      @skip_package ||= val || Config.skip_packaging
     end
     expose :skip_packager
     #

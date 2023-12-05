@@ -180,6 +180,8 @@ module Omnibus
 
     default(:host, nil)
 
+    default(:skip_packaging, false)
+
     #
     # @!group DMG / PKG configuration options
     # --------------------------------------------------

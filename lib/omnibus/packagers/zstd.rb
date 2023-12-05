@@ -75,5 +75,15 @@ module Omnibus
       end
     end
     expose :safe_architecture
+
+    def skip_packager(val = false)
+      unless val.is_a?(TrueClass) || val.is_a?(FalseClass)
+        raise InvalidValue.new(:skip_packager, "be TrueClass or FalseClass")
+      end
+
+      @skip_package ||= val
+    end
+    expose :skip_packager
+
   end
 end
