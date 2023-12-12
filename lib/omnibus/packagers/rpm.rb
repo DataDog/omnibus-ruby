@@ -454,6 +454,8 @@ module Omnibus
                         files: files,
                         build_dir: build_dir(debug),
                         platform_family: Ohai["platform_family"],
+                        compression_level: compression_level,
+                        compression_threads: compression_threads,
                       })
     end
 
@@ -830,5 +832,25 @@ module Omnibus
         shellout!("yum -y remove #{packages}")
       end
     end
+
+    def compression_level(val = nil)
+      unless val.nil?
+        unless val >= 0 && val <= 9
+          raise InvalidValue.new(:compression_level, 'be an Integer between 0 and 9 included')
+        end
+      end
+      @compression_level = val || 7
+    end
+    expose :compression_level
+
+    def compression_threads(val = nil)
+      unless val.nil?
+        unless val <= 0 || val > 32
+          raise InvalidValue.new(:compression_level, 'be a stricly positive and lower than 32 Integer')
+        end
+      end
+      @compression_threads || 1
+    end
+    expose :compression_threads
   end
 end
