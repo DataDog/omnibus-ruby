@@ -438,7 +438,9 @@ module Omnibus
 
       # Execute the build command
       Dir.chdir(Config.package_dir) do
-        shellout!("fakeroot dpkg-deb -z9 -Zxz -D --build #{staging_path} #{package_name(debug)}")
+        comp_level = compression_level.nil? ? "" : "-z#{compression_level}"
+        shellout!("fakeroot dpkg-deb #{comp_level} -Zxz -D --build #{staging_path} #{package_name(debug)}",
+          environment: { "XZ_OPT" => "-T#{compression_threads}" } )
       end
     end
 
@@ -673,5 +675,25 @@ module Omnibus
     def remove(packages)
       shellout!("apt-get remove -y --force-yes #{packages}")
     end
+
+    def compression_level(val = nil)
+      unless val.nil?
+        unless val >= 0 && val <= 9
+          raise InvalidValue.new(:compression_level, 'be an Integer between 0 and 9 included')
+        end
+      end
+      @compression_level = val || 6
+    end
+    expose :compression_level
+
+    def compression_threads(val = nil)
+      unless val.nil?
+        unless val <= 0 || val > 32
+          raise InvalidValue.new(:compression_level, 'be a stricly positive and lower than 32 Integer')
+        end
+      end
+      @compression_threads || 1
+    end
+    expose :compression_threads
   end
 end
