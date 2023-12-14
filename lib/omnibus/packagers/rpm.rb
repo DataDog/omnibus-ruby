@@ -839,7 +839,7 @@ module Omnibus
           raise InvalidValue.new(:compression_level, 'be an Integer between 0 and 9 included')
         end
       end
-      @compression_level = val || 7
+      @compression_level = val || 6
     end
     expose :compression_level
 
