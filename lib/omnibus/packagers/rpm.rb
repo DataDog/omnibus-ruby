@@ -846,7 +846,7 @@ module Omnibus
     def compression_threads(val = nil)
       unless val.nil?
         unless val <= 0 || val > 32
-          raise InvalidValue.new(:compression_level, 'be a stricly positive and lower than 32 Integer')
+          raise InvalidValue.new(:compression_threads, 'be a stricly positive and lower than 32 Integer')
         end
       end
       @compression_threads || 1
