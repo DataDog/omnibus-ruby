@@ -456,7 +456,7 @@ module Omnibus
                         platform_family: Ohai["platform_family"],
                         compression_level: compression_level,
                         compression_threads: compression_threads,
-                        compressin_algo: compression_algo,
+                        compression_algo: compression_algo,
                       })
     end
 
