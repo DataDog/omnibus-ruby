@@ -865,7 +865,7 @@ module Omnibus
         end
 
       end
-      @compression_algo = val || "gzip"
+      @compression_algo = val || "gzdio"
     end
     expose :compression_algo
   end
