@@ -456,6 +456,7 @@ module Omnibus
                         platform_family: Ohai["platform_family"],
                         compression_level: compression_level,
                         compression_threads: compression_threads,
+                        compressin_algo: compression_algo,
                       })
     end
 
@@ -852,5 +853,20 @@ module Omnibus
       @compression_threads || 1
     end
     expose :compression_threads
+
+    def compression_algo(val = nil)
+      unless val.nil?
+        if val == "xz"
+          val = "xzdio"
+        elsif val == "gzip"
+          val = "gzdio"
+        else
+          raise InvalidValue.new(:compression_algo, 'be one of xz or gzip')
+        end
+
+      end
+      @compression_algo = val || "gzip"
+    end
+    expose :compression_algo
   end
 end

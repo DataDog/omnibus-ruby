@@ -439,7 +439,7 @@ module Omnibus
       # Execute the build command
       Dir.chdir(Config.package_dir) do
         comp_level = compression_level.nil? ? "" : "-z#{compression_level}"
-        shellout!("fakeroot dpkg-deb #{comp_level} -Zxz -D --build #{staging_path} #{package_name(debug)}",
+        shellout!("fakeroot dpkg-deb #{comp_level} -Z#{compression_algo} -D --build #{staging_path} #{package_name(debug)}",
                   environment: { "XZ_OPT" => "-T#{compression_threads}" })
       end
     end
@@ -695,5 +695,15 @@ module Omnibus
       @compression_threads || 1
     end
     expose :compression_threads
+
+    def compression_algo(val = nil)
+      unless val.nil?
+        unless val != "xz" && val != "gzip"
+          raise InvalidValue.new(:compression_algo, 'be one of xz or gzip')
+        end
+      end
+      @compression_algo || "gzip"
+    end
+    expose :compression_algo
   end
 end
