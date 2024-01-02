@@ -698,7 +698,7 @@ module Omnibus
 
     def compression_algo(val = nil)
       unless val.nil?
-        unless val != "xz" && val != "gzip"
+        unless val == "xz" || val == "gzip"
           raise InvalidValue.new(:compression_algo, 'be one of xz or gzip')
         end
       end
