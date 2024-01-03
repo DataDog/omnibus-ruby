@@ -9,7 +9,11 @@
 %define __spec_clean_pre true
 
 # Setup payload compression
+<% if compression_threads != 1 %>
 %define _binary_payload w<%= compression_level %>T<%= compression_threads %>.<%= compression_algo %>
+<% else %>
+%define _binary_payload w<%= compression_level %>.<%= compression_algo %>
+<% end %>
 
 # Metadata
 Name: <%= name %>
