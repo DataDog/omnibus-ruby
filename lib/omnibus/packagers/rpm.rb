@@ -844,7 +844,14 @@ module Omnibus
     end
     expose :compression_level
 
+    #
+    # Defines the number of thread that should be used to compress the package
+    # This will be ignored when compression_algo is set to gzip as this isn't
+    # supported by gzip
+    #
     def compression_threads(val = nil)
+      # Don't reject the value if compression_algo is != gzip in order to avoid
+      # forcing an ordering for the properties
       unless val.nil?
         unless val > 0 && val < 32
           raise InvalidValue.new(:compression_threads, 'be a stricly positive and lower than 32 Integer')
