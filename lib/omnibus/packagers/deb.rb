@@ -692,7 +692,7 @@ module Omnibus
           raise InvalidValue.new(:compression_threads, 'be a stricly positive and lower than 32 Integer')
         end
       end
-      @compression_threads || 1
+      @compression_threads = val || 1
     end
     expose :compression_threads
 
@@ -702,7 +702,7 @@ module Omnibus
           raise InvalidValue.new(:compression_algo, 'be one of xz or gzip')
         end
       end
-      @compression_algo || "gzip"
+      @compression_algo = val || "gzip"
     end
     expose :compression_algo
   end
