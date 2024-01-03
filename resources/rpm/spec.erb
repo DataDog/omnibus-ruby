@@ -8,7 +8,7 @@
 %define __spec_clean_post true
 %define __spec_clean_pre true
 
-# Use gzip payload compression
+# Setup payload compression
 %define _binary_payload w<%= compression_level %>T<%= compression_threads %>.<%= compression_algo %>
 
 # Metadata
