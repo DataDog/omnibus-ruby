@@ -439,7 +439,7 @@ module Omnibus
       # Execute the build command
       Dir.chdir(Config.package_dir) do
         comp_level = compression_level.nil? ? "" : "-z#{compression_level}"
-        shellout!("fakeroot dpkg-deb #{comp_level} -Z#{compression_algo} -D --build #{staging_path} #{package_name(debug)}",
+        shellout!("fakeroot dpkg-deb -z#{comp_level} -Z#{compression_algo} -D --build #{staging_path} #{package_name(debug)}",
                   environment: { "XZ_OPT" => "-T#{compression_threads}" })
       end
     end
