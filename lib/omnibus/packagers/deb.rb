@@ -676,9 +676,9 @@ module Omnibus
       shellout!("apt-get remove -y --force-yes #{packages}")
     end
 
-    def compression_level(val = NULL)
-      if null?(val)
-        @compression_level || 6
+    def compression_level(val = nil)
+      if val.nil?
+        @compression_level = 6
       else
         unless val >= 0 && val <= 9
           raise InvalidValue.new(:compression_level, 'be an Integer between 0 and 9 included')
@@ -689,10 +689,12 @@ module Omnibus
     end
     expose :compression_level
 
-    def compression_threads(val = NULL)
-      if null?(val)
-        @compression_threads || 1
+    def compression_threads(val = nil)
+      if val.nil?
+        @compression_threads = 1
       else
+        # Don't reject the value if compression_algo is != gzip in order to avoid
+        # forcing an ordering for the properties
         unless val > 0 && val < 32
           raise InvalidValue.new(:compression_threads, 'be a stricly positive and lower than 32 Integer')
         end
@@ -702,9 +704,9 @@ module Omnibus
     end
     expose :compression_threads
 
-    def compression_algo(val = NULL)
-      if null?(val)
-        @compression_algo || "gzip"
+    def compression_algo(val = nil)
+      if val.nil?
+        @compression_algo = "gzip"
       else
         unless val == "xz" || val == "gzip"
           raise InvalidValue.new(:compression_algo, 'be one of xz or gzip')
