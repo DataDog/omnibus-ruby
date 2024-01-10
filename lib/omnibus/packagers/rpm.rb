@@ -836,7 +836,7 @@ module Omnibus
 
     def compression_level(val = nil)
       if val.nil?
-        @compression_level = 6
+        @compression_level || 6
       else
         unless val >= 0 && val <= 9
           raise InvalidValue.new(:compression_level, 'be an Integer between 0 and 9 included')
@@ -854,7 +854,7 @@ module Omnibus
     #
     def compression_threads(val = nil)
       if val.nil?
-        @compression_threads = 1
+        @compression_threads || 1
       else
         # Don't reject the value if compression_algo is != gzip in order to avoid
         # forcing an ordering for the properties
@@ -869,7 +869,7 @@ module Omnibus
 
     def compression_algo(val = nil)
       if val.nil?
-        @compression_algo = "gzdio"
+        @compression_algo || "gzdio"
       else
         if val == "xz"
           val = "xzdio"
