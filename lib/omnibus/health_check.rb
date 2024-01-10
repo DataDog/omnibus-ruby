@@ -591,7 +591,10 @@ module Omnibus
       current_library = nil
       bad_libs = {}
 
+      log.info(log_key) { "Trying ldd" }
+
       yield_shellout_results("find #{project.install_dir}/ -type f -regextype posix-extended ! -regex '#{regexp}' | xargs ldd") do |line|
+        log.info(log_key) { "#{line}" }
         case line
         when /^(.+):$/
           current_library = Regexp.last_match[1]
