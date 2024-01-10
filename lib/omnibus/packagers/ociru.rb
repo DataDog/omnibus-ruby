@@ -65,10 +65,17 @@ module Omnibus
       FileUtils.makedirs(sha256_path)
       FileUtils.mv(archive_file, blob_path)
 
-      # return value is the digest of the archive
-      # TODO: compute filelist here and return it as well
-      
+      # create all the json metadata files
       create_metadata(digest, File.size(blob_path), fl)
+
+      # create the final package
+      package_file = windows_safe_path(Config.package_dir, package_name)
+      cmd = <<-EOH.split.join(" ").squeeze(" ").strip
+        tar -C #{staging_dir} -cJf
+        #{package_file}
+        .
+      EOH
+      shellout!(cmd)
     end
 
     def create_metadata(archive_sha256, archive_size, filelist)
@@ -97,15 +104,15 @@ module Omnibus
       json = {
         "schemaVersion": 2,
         "mediaType": "application/vnd.oci.image.manifest.v1+json",
-        "artifactType": "application/vnd.example+type", # TODO
+        "artifactType": "application/vnd.datadoghq.pkg",
         "config": {
-          "mediaType": "application/vnd.example.config.v1+json", # TODO
+          "mediaType": "application/vnd.datadoghq.pkgmetadata.v1+json",
           "digest": "sha256:#{config_sha256}",
           "size": config_size
         },
         "layers": [
           {
-            "mediaType": "application/vnd.example.data.v1.tar+zstd", # TODO
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+zstd",
             "digest": "sha256:#{archive_sha256}",
             "size": archive_size
           }
@@ -182,7 +189,7 @@ module Omnibus
 
     def filelist(payload_dir)
       # TODO: how performant is this?
-      # TODO: does this work with symlinks etc?
+      # TODO: does this work properly with symlinks etc?
       filelist = {}
 
       Find.find(payload_dir) do |path|
@@ -191,7 +198,7 @@ module Omnibus
         filelist["/#{installed_path}"] = {
           "perms": stat.mode.to_s(8)[-4..-1],
         }
-        unless stat.directory?
+        unless stat.directory? or stat.symlink?
           filelist["/#{installed_path}"]["digest"] = "sha256:#{Digest::SHA256.file(path).hexdigest}"
         end
       end
