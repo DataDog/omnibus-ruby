@@ -246,7 +246,7 @@ module Omnibus
       measure("Health check time") do
         log.info(log_key) { "Running health on #{project.name}" }
         bad_libs =  case Ohai["platform"]
-                    when "mac_os_x"
+                    when "macos"
                       health_check_otool
                     when "aix"
                       health_check_aix
