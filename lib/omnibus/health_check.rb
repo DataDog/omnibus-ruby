@@ -245,7 +245,7 @@ module Omnibus
     def run!
       measure("Health check time") do
         log.info(log_key) { "Running health on #{project.name}" }
-        p Ohai["platform"]
+        log.info(log_key) { "#{Ohai["platform"]}" }
         bad_libs =  case Ohai["platform"]
                     when "mac_os_x"
                       health_check_otool
@@ -462,8 +462,8 @@ module Omnibus
       bad_libs = {}
 
       yield_shellout_results("find #{project.install_dir}/ -type f | egrep '\.(dylib|bundle)$' | xargs otool -L") do |line|
-      p line
-      case line
+        log.info(log_key) { "#{line}" }
+        case line
         when /^(.+):$/
           current_library = Regexp.last_match[1]
         when /^\s+(.+) \(.+\)$/
