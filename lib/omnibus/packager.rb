@@ -40,9 +40,9 @@ module Omnibus
     #
     PLATFORM_PACKAGER_MAP = {
       "debian" => [DEB, OCIRU],
-      "fedora" => RPM,
-      "suse" => RPM,
-      "rhel" => RPM,
+      "fedora" => [RPM, OCIRU],
+      "suse" => [RPM, OCIRU],
+      "rhel" => [RPM, OCIRU],
       "wrlinux" => RPM,
       "aix" => BFF,
       "solaris" => Solaris,
