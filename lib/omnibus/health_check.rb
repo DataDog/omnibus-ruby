@@ -460,7 +460,9 @@ module Omnibus
       current_library = nil
       bad_libs = {}
 
+      log.debug(log_key) { "healthcheck - executing [find #{project.install_dir}/ -type f | egrep '\.(dylib|bundle)$' | xargs otool -L]" }
       yield_shellout_results("find #{project.install_dir}/ -type f | egrep '\.(dylib|bundle)$' | xargs otool -L") do |line|
+        log.debug(log_key) { "healthcheck - processing #{line}" }
         case line
         when /^(.+):$/
           current_library = Regexp.last_match[1]
