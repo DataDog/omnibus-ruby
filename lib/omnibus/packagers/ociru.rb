@@ -209,20 +209,20 @@ module Omnibus
 
     def oci_os
       @safe_os = case Ohai["platform_family"]
-        when "windows" then "windows"
-        when "mac_os_x" then "darwin"
-        else "linux"
-      end
+                 when "windows" then "windows"
+                 when "mac_os_x" then "darwin"
+                 else "linux"
+                 end
     end
 
     def oci_architecture
       val = shellout!("uname --processor").stdout.strip
 
       val = case val
-        when "x86_64", "x64", "amd64" then "amd64"
-        when "arm64", "aarch64" then "arm64"
-        else raise ArgumentError, "Unknown architecture '#{val}'"
-      end
+            when "x86_64", "x64", "amd64" then "amd64"
+            when "arm64", "aarch64" then "arm64"
+            else raise ArgumentError, "Unknown architecture '#{val}'"
+            end
 
       @oci_architecture = val
     end
