@@ -841,6 +841,7 @@ module Omnibus
         unless val >= 0 && val <= 9
           raise InvalidValue.new(:compression_level, 'be an Integer between 0 and 9 included')
         end
+
         @compression_level = val
       end
     end
@@ -860,6 +861,7 @@ module Omnibus
         unless val > 0 && val < 32
           raise InvalidValue.new(:compression_threads, 'be a stricly positive and lower than 32 Integer')
         end
+
         @compression_threads = val
       end
     end
@@ -876,6 +878,7 @@ module Omnibus
         else
           raise InvalidValue.new(:compression_algo, 'be one of xz or gzip')
         end
+
         @compression_algo = val
       end
     end
