@@ -50,6 +50,7 @@ module Omnibus
 
       # create the archive
       archive_file = windows_safe_path(staging_dir, intermediate_pkg_name)
+      # TODO: configurable compression level
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
         tar -C #{payload_dir} -cJf
         #{archive_file}
@@ -70,6 +71,7 @@ module Omnibus
 
       # create the final package
       package_file = windows_safe_path(Config.package_dir, package_name)
+      # TODO: configurable compression level
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
         tar -C #{staging_dir} -cJf
         #{package_file}
