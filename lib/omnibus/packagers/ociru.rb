@@ -48,15 +48,16 @@ module Omnibus
       end
       fl = filelist(payload_dir)
 
+      compress_env = { "XZ_OPT" => "-T#{compression_threads} -#{compression_level}" }
+
       # create the archive
       archive_file = windows_safe_path(staging_dir, intermediate_pkg_name)
-      # TODO: configurable compression level
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
         tar -C #{payload_dir} -cJf
         #{archive_file}
         .
       EOH
-      shellout!(cmd)
+      shellout!(cmd, environment: compress_env)
       FileUtils.rm_rf(payload_dir)
 
       # move it to the proper location in the blobs directory
@@ -71,13 +72,12 @@ module Omnibus
 
       # create the final package
       package_file = windows_safe_path(Config.package_dir, package_name)
-      # TODO: configurable compression level
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
         tar -C #{staging_dir} -cJf
         #{package_file}
         .
       EOH
-      shellout!(cmd)
+      shellout!(cmd, environment: compress_env)
     end
 
     def create_metadata(archive_sha256, archive_size, filelist)
@@ -228,5 +228,29 @@ module Omnibus
 
       @oci_architecture = val
     end
+
+    def compression_threads(val = nil)
+      if val.nil?
+        @compression_threads || 1
+      else
+        unless val > 0 && val < 32
+          raise InvalidValue.new(:compression_threads, 'be a stricly positive and lower than 32 Integer')
+        end
+        @compression_threads = val
+      end
+    end
+    expose :compression_threads
+
+    def compression_level(val = nil)
+      if val.nil?
+        @compression_level || 6
+      else
+        unless val >= 0 && val <= 9
+          raise InvalidValue.new(:compression_level, 'be an Integer between 0 and 9 included')
+        end
+        @compression_level = val
+      end
+    end
+    expose :compression_level
   end
 end
