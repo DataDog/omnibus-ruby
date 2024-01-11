@@ -190,19 +190,37 @@ module Omnibus
     expose :special_files
 
     def filelist(payload_dir)
-      # TODO: how performant is this?
-      # TODO: does this work properly with symlinks etc?
-      filelist = {}
+      nb_workers = 4
+      results = Array.new(nb_workers)
 
-      Find.find(payload_dir) do |path|
-        installed_path = Pathname.new(path).relative_path_from(Pathname.new(payload_dir)).to_s
-        stat = File.stat(path)
-        filelist["/#{installed_path}"] = {
-          "perms": stat.mode.to_s(8)[-4..-1],
-        }
-        unless stat.directory? or stat.symlink?
-          filelist["/#{installed_path}"]["digest"] = "sha256:#{Digest::SHA256.file(path).hexdigest}"
+      process_files = Proc.new do |file_slice, index|
+        filelist = {}
+        file_slice.each do |installed_path|
+          stat = File.stat(path)
+          filelist["/#{installed_path}"] = {
+            "perms": stat.mode.to_s(8)[-4..-1],
+          }
+          unless stat.directory? or stat.symlink?
+            filelist["/#{installed_path}"]["digest"] = "sha256:#{Digest::SHA256.file(path).hexdigest}"
+          end
         end
+        results[index] = filelist
+      end
+
+      pool = ThreadPool.new(nb_workers) do |pool|
+        to_hash = []
+        Find.find(payload_dir) do |path|
+          to_hash.push(Pathname.new(path).relative_path_from(Pathname.new(payload_dir)).to_s)
+        end
+        slices = to_hash.each_slice((a.size/nb_workers.to_f).round).to_a
+        slices.each do |s|
+          pool.schedule(s, process_file)
+        end
+      end
+
+      filelist = {}
+      results.each do |r|
+        filelist.merge(r)
       end
       filelist.delete("/.")
 
