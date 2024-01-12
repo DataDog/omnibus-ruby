@@ -194,8 +194,9 @@ module Omnibus
 
       process_files = Proc.new do |file_slice, index|
         filelist = {}
-        file_slice.each do |installed_path|
-          stat = File.stat(installed_path)
+        file_slice.each do |path|
+          installed_path = Pathname.new(path).relative_path_from(Pathname.new(payload_dir)).to_s
+          stat = File.stat(path)
           filelist["/#{installed_path}"] = {
             "perms": stat.mode.to_s(8)[-4..-1],
           }
@@ -209,7 +210,7 @@ module Omnibus
       pool = ThreadPool.new(nb_workers) do |pool|
         to_hash = []
         Find.find(payload_dir) do |path|
-          to_hash.push(Pathname.new(path).relative_path_from(Pathname.new(payload_dir)).to_s)
+          to_hash.push(path)
         end
         slices = to_hash.each_slice((to_hash.size/nb_workers.to_f).round).to_a
         slices.each_with_index do |s, i|
