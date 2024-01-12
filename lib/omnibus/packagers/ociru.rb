@@ -212,8 +212,8 @@ module Omnibus
           to_hash.push(Pathname.new(path).relative_path_from(Pathname.new(payload_dir)).to_s)
         end
         slices = to_hash.each_slice((to_hash.size/nb_workers.to_f).round).to_a
-        slices.each do |s|
-          pool.schedule(s, process_files)
+        slices.each_with_index do |s, i|
+          pool.schedule(s, i, process_files)
         end
       end
 
