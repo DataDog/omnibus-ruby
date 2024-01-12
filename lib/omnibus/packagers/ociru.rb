@@ -213,7 +213,7 @@ module Omnibus
         end
         slices = to_hash.each_slice((to_hash.size/nb_workers.to_f).round).to_a
         slices.each_with_index do |s, i|
-          pool.schedule(s, i, process_files)
+          pool.schedule(s, i, &process_files)
         end
       end
 
