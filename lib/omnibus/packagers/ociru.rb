@@ -241,6 +241,7 @@ module Omnibus
       val = case val
             when "x86_64", "x64", "amd64" then "amd64"
             when "arm64", "aarch64" then "arm64"
+            when "armv7l" then "arm"
             else raise ArgumentError, "Unknown architecture '#{val}'"
             end
 
