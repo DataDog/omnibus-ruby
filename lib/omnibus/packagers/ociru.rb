@@ -195,7 +195,7 @@ module Omnibus
       process_files = Proc.new do |file_slice, index|
         filelist = {}
         file_slice.each do |installed_path|
-          stat = File.stat(path)
+          stat = File.stat(installed_path)
           filelist["/#{installed_path}"] = {
             "perms": stat.mode.to_s(8)[-4..-1],
           }
