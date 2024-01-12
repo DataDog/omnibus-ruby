@@ -252,7 +252,7 @@ module Omnibus
     #
     def create_sync_dir(source, destination)
       if not File.directory?(destination)
-        FileUtils.mkdir_p(destination, mode=File.stat(source).mode)
+        FileUtils.mkdir_p(destination, :mode => File.stat(source).mode)
       else
         if File.stat(source).mode != File.stat(destination).mode
           File.chmod(File.stat(source).mode, destination)
