@@ -191,7 +191,7 @@ module Omnibus
     expose :special_files
 
     def filelist(payload_dir)
-      nb_workers = 4
+      nb_workers = 8
       results = Array.new(nb_workers)
 
       process_files = Proc.new do |file_slice, index|
