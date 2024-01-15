@@ -56,7 +56,9 @@ module Omnibus
         #{archive_file}
         .
       EOH
-      shellout!(cmd, environment: compress_env)
+      measure("Compressing OCI") do
+        shellout!(cmd, environment: compress_env)
+      end
       FileUtils.rm_rf(payload_dir)
 
       # move it to the proper location in the blobs directory
@@ -207,14 +209,16 @@ module Omnibus
         results[index] = filelist
       end
 
-      pool = ThreadPool.new(nb_workers) do |pool|
-        to_hash = []
-        Find.find(payload_dir) do |path|
-          to_hash.push(path)
-        end
-        slices = to_hash.each_slice((to_hash.size/nb_workers.to_f).round).to_a
-        slices.each_with_index do |s, i|
-          pool.schedule(s, i, &process_files)
+      measure("Checksuming all files") do
+        pool = ThreadPool.new(nb_workers) do |pool|
+          to_hash = []
+          Find.find(payload_dir) do |path|
+            to_hash.push(path)
+          end
+          slices = to_hash.each_slice((to_hash.size/nb_workers.to_f).round).to_a
+          slices.each_with_index do |s, i|
+            pool.schedule(s, i, &process_files)
+          end
         end
       end
 
