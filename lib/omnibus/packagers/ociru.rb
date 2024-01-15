@@ -78,7 +78,10 @@ module Omnibus
         #{package_file}
         .
       EOH
-      shellout!(cmd, environment: compress_env)
+      compress_env = { "XZ_OPT" => "-T#{compression_threads} -1" }
+      measure("Final package compression") do
+        shellout!(cmd, environment: compress_env)
+      end
     end
 
     def create_metadata(archive_sha256, archive_size, filelist)
