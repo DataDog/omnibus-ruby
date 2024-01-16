@@ -453,6 +453,27 @@ module Omnibus
       end
     end
 
+    # Get the dylib install path if present.
+    # When present, it would confuse the healthcheck into thinking the
+    # library is linking with an identically named library, while this not the
+    # indication of any link, and it should jjust be ignored.
+    def get_macos_dylib_install_name(lib)
+      # otool -D expected output:
+      # $> otool -D ..../libddwaf.dylib
+      # /opt/datadog-agent/embedded/lib/python3.11/site-packages/ddtrace/appsec/ddwaf/libddwaf/x86_64/lib/libddwaf.dylib:
+      # @rpath/libddwaf.dylib
+      yield_shellout_results("otool -D #{lib}") do |line|
+        case line
+        when /^(.+):$/
+          # This is the name of the library we're inspecting, nothing to do here
+        when /^(.+).dylib$/
+          install_name = Regexp.last_match[0]
+          return install_name
+        end
+      end
+      return nil
+    end
+
     #
     # Run healthchecks against otool.
     #
@@ -462,15 +483,17 @@ module Omnibus
     def health_check_otool
       current_library = nil
       bad_libs = {}
+      install_name = nil
 
       yield_shellout_results("find #{project.install_dir} -type f | egrep '\.(dylib|bundle)$' | xargs otool -L") do |line|
         case line
         when /^(.+):$/
           current_library = Regexp.last_match[1]
-        when /^\s+(.+) \(.+\)$/
+          install_name = get_macos_dylib_install_name(current_library)
+        when /^\s+(.+) \(.+\)?$/
           linked = Regexp.last_match[1]
           name = File.basename(linked)
-          bad_libs = check_for_bad_macos_library(bad_libs, current_library, name, linked)
+          bad_libs = check_for_bad_macos_library(bad_libs, current_library, name, linked, install_name)
         end
       end
 
@@ -480,7 +503,7 @@ module Omnibus
     #
     # Check the given path and library for "bad" libraries.
     #
-    def check_for_bad_macos_library(bad_libs, current_library, name, linked)
+    def check_for_bad_macos_library(bad_libs, current_library, name, linked, install_name)
       safe = nil
 
       whitelist_libs = MAC_WHITELIST_LIBS
@@ -503,8 +526,13 @@ module Omnibus
         loader_path_regexp = Regexp.new("@loader_path")
         install_dir_regexp = Regexp.new(project.install_dir)
 
+        if install_name && linked == install_name
+          # This is just the install name being mentionned, but not an actually
+          # linked dependency. As such, it is safe and we have nothing to check
+          safe = true
+          possible_paths = []
         # Do the linker's work of replacing @rpath with the rpaths defined by the library
-        if linked =~ rpath_regexp
+        elsif linked =~ rpath_regexp
           possible_paths = []
           # Find what are the library's rpaths by looking at the load commands.
           # Example otool -l partial output:
