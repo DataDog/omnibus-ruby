@@ -463,7 +463,7 @@ module Omnibus
       current_library = nil
       bad_libs = {}
 
-      yield_shellout_results("find #{project.install_dir}/ -type f | egrep '\.(dylib|bundle)$' | xargs otool -L") do |line|
+      yield_shellout_results("find #{project.install_dir} -type f | egrep '\.(dylib|bundle)$' | xargs otool -L") do |line|
         case line
         when /^(.+):$/
           current_library = Regexp.last_match[1]
