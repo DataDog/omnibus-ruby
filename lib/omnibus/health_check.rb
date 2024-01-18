@@ -152,6 +152,7 @@ module Omnibus
       /libzstd\.1\.dylib/,
       /Security/,
       /SystemConfiguration/,
+      /libresolv\.9\.dylib/,
     ].freeze
 
     FREEBSD_WHITELIST_LIBS = [
