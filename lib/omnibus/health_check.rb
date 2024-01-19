@@ -494,7 +494,11 @@ module Omnibus
         when /^\s+(.+) \(.+\)?$/
           linked = Regexp.last_match[1]
           name = File.basename(linked)
-          bad_libs = check_for_bad_macos_library(bad_libs, current_library, name, linked, install_name)
+          # If this is just the install name being mentionned, but not an actually
+          # linked dependency then we have nothing to check
+          unless install_name && install_name == linked
+            bad_libs = check_for_bad_macos_library(bad_libs, current_library, name, linked)
+          end
         end
       end
 
@@ -504,7 +508,7 @@ module Omnibus
     #
     # Check the given path and library for "bad" libraries.
     #
-    def check_for_bad_macos_library(bad_libs, current_library, name, linked, install_name)
+    def check_for_bad_macos_library(bad_libs, current_library, name, linked)
       safe = nil
 
       whitelist_libs = MAC_WHITELIST_LIBS
@@ -527,13 +531,8 @@ module Omnibus
         loader_path_regexp = Regexp.new("@loader_path")
         install_dir_regexp = Regexp.new(project.install_dir)
 
-        if install_name && linked == install_name
-          # This is just the install name being mentionned, but not an actually
-          # linked dependency. As such, it is safe and we have nothing to check
-          safe = true
-          possible_paths = []
         # Do the linker's work of replacing @rpath with the rpaths defined by the library
-        elsif linked =~ rpath_regexp
+        if linked =~ rpath_regexp
           possible_paths = []
           # Find what are the library's rpaths by looking at the load commands.
           # Example otool -l partial output:
