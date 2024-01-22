@@ -552,6 +552,8 @@ module Omnibus
           #      cmdsize 48
           #         name /opt/datadog-agent/embedded/lib (offset 12)
           log.debug(log_key) { "==== Checking rpath entry for #{current_library}" }
+          raw = shellout("otool -l #{current_library} | grep LC_RPATH -A2 | grep path | awk '{ print $2 }'")
+          log.debug(log_key) { "raw output: stdout: #{raw.stdout} stderr: #{raw.stderr}" }
           yield_shellout_results("otool -l #{current_library} | grep LC_RPATH -A2 | grep path | awk '{ print $2 }'") do |rpath|
             # The rpath variable contains a \n (\r\n on Windows), so we remove it when including it in the complete path
             log.debug(log_key) { "====== potential rpath value for #{current_library} : #{rpath}" }
