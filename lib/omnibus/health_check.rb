@@ -495,6 +495,7 @@ module Omnibus
         when /^(.+):$/
           current_library = Regexp.last_match[1]
           install_name = get_macos_dylib_install_name(current_library)
+          log.debug(log_key) { "==== Checking #{current_library} (install name: #{install_name})" }
         when /^\s+(.+) \(.+\)?$/
           linked = Regexp.last_match[1]
           name = File.basename(linked)
@@ -551,8 +552,10 @@ module Omnibus
           #          cmd LC_RPATH
           #      cmdsize 48
           #         name /opt/datadog-agent/embedded/lib (offset 12)
+          log.debug(log_key) { "==== Checking rpath entry for #{current_library}" }
           yield_shellout_results("otool -l #{current_library} | grep LC_RPATH -A2 | grep path | awk '{ print $2 }'") do |rpath|
             # The rpath variable contains a \n (\r\n on Windows), so we remove it when including it in the complete path
+            log.debug(log_key) { "====== potential rpath value for #{current_library} : #{rpath}" }
             possible_paths << linked.sub("@rpath", rpath.chop)
           end
         # Do the linker's work of replacing @loader_path by the directory the library that's using the dependency is in
