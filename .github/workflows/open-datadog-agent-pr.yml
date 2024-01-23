@@ -2,12 +2,12 @@ name: Open datadog-agent PR
 run-name:
 on:
   pull_request:
-    # types:
-    #   - closed
+    types:
+      - closed
 
 jobs:
   open_bump_pr:
-    # if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Create Token
@@ -63,7 +63,6 @@ jobs:
         run: |
           inv -e release.set-release-json 'nightly::OMNIBUS_RUBY_VERSION' ${{ steps.new_sha.outputs.NEW_SHA }}
           inv -e release.set-release-json 'nightly-a7::OMNIBUS_RUBY_VERSION'  ${{ steps.new_sha.outputs.NEW_SHA }}
-          git diff
 
       - name: Compute milestone
         working-directory: datadog-agent
@@ -75,18 +74,18 @@ jobs:
           MILESTONE_ID=$(inv github.get-milestone-id ${MILESTONE_NAME})
           echo MILESTONE_ID=${MILESTONE_ID} >> "$GITHUB_OUTPUT"
 
-      # - name: create datadog-agent PR
-      #   uses: peter-evans/create-pull-request@v5
-      #   with:
-      #     token: ${{ steps.app-token.outputs.token }}
-      #     base: main
-      #     delete-branch: true
-      #     path: datadog-agent
-      #     add-paths: release.json
-      #     commit-message: 'omnibus: bump OMNIBUS_RUBY_VERSION'
-      #     title: '[omnibus][automated] Bump OMNIBUS_RUBY_VERSION'
-      #     branch: 'automated/omnibus-ruby/${{ github.event.number }}'
-      #     labels: 'team/agent-platform,changelog/no-changelog,qa/no-code-change'
-      #     milestone: ${{ steps.milestone.outputs.MILESTONE_ID }}
-      #     body: 'Automatically created by merging ${{ github.event.pull_request.html_url }}'
-      #
+      - name: create datadog-agent PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          base: main
+          delete-branch: true
+          path: datadog-agent
+          add-paths: release.json
+          commit-message: 'omnibus: bump OMNIBUS_RUBY_VERSION'
+          title: '[omnibus][automated] Bump OMNIBUS_RUBY_VERSION'
+          branch: 'automated/omnibus-ruby/${{ github.event.number }}'
+          labels: 'team/agent-platform,changelog/no-changelog,qa/no-code-change'
+          milestone: ${{ steps.milestone.outputs.MILESTONE_ID }}
+          body: 'Automatically created by merging ${{ github.event.pull_request.html_url }}'
+
