@@ -28,6 +28,15 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Clone omnibus-ruby repo
+        uses: actions/checkout@v4
+        with:
+          repository: datadog/omnibus-ruby
+          persist-credentials: false
+          path: omnibus-ruby
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
       - name: Setup Python3
         uses: actions/setup-python@v4
         with:
@@ -41,6 +50,7 @@ jobs:
           pip3 install -r tasks/libs/requirements-github.txt
 
       - name: Get new commit sha1
+        working-directory: omnibus-ruby
         id: new_sha
         run: |
           git fetch
