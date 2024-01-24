@@ -176,7 +176,7 @@ module Omnibus
     end
 
     def package_name
-      "#{project.package_name}-#{project.build_version}-#{project.build_iteration}-#{oci_architecture}.tar.xz"
+      "#{project.package_name}_#{project.build_version}-#{project.build_iteration}_oci_#{oci_architecture}.tar.xz"
     end
 
     # The remote_updater packager doesn't support debug packaging
