@@ -25,12 +25,8 @@ module Omnibus
     id :ociru
     intermediate_pkg_name = "package.tar.xz"
 
-    setup do
-    end
-
     build do
       # create the payload directory, copy the install_dir and extra files to it
-      # TODO: does the makedirs do what we need in terms of file permissions?
       payload_dir = File.join(staging_dir, "payload")
       install_dir = File.join(payload_dir, project.install_dir)
       FileSyncer.sync(project.install_dir, install_dir, exclude: exclusions)
