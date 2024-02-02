@@ -214,7 +214,7 @@ module Omnibus
           Find.find(payload_dir) do |path|
             to_hash.push(path)
           end
-          slices = to_hash.each_slice((to_hash.size/nb_workers.to_f).round).to_a
+          slices = to_hash.each_slice((to_hash.size / nb_workers.to_f).round).to_a
           slices.each_with_index do |s, i|
             pool.schedule(s, i, &process_files)
           end
@@ -258,6 +258,7 @@ module Omnibus
         unless val > 0 && val < 32
           raise InvalidValue.new(:compression_threads, 'be a stricly positive and lower than 32 Integer')
         end
+
         @compression_threads = val
       end
     end
@@ -270,6 +271,7 @@ module Omnibus
         unless val >= 0 && val <= 9
           raise InvalidValue.new(:compression_level, 'be an Integer between 0 and 9 included')
         end
+
         @compression_level = val
       end
     end
