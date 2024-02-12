@@ -23,9 +23,22 @@ require "fileutils"
 module Omnibus
   class Packager::OCIRU < Packager::Base
     id :ociru
-    intermediate_pkg_name = "package.tar.xz"
 
     build do
+      case compression_algorithm
+        when "gzip"
+          tar_flag = "-z"
+          ext = "gz"
+        when "xz"
+          tar_flag = "-J"
+          ext = "xz"
+        when "ztsd"
+          tar_flag = "-I zstd"
+          ext = "zst"
+        else
+          raise ArgumentError, "Unknown archive format '#{compression_algorithm}'"
+      end
+      intermediate_pkg_name = "package.tar.#{ext}"
       # create the payload directory, copy the install_dir and extra files to it
       payload_dir = File.join(staging_dir, "payload")
       install_dir = File.join(payload_dir, project.install_dir)
@@ -43,12 +56,13 @@ module Omnibus
       end
       fl = filelist(payload_dir)
 
+      # Pass compression options regardless of the used algorithm, worst case they will get ignored
       compress_env = { "XZ_OPT" => "-T#{compression_threads} -#{compression_level}" }
 
       # create the archive
       archive_file = windows_safe_path(staging_dir, intermediate_pkg_name)
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
-        tar -C #{payload_dir} -cJf
+        tar -C #{payload_dir} -cf #{tar_flag}
         #{archive_file}
         .
       EOH
@@ -70,7 +84,7 @@ module Omnibus
       # create the final package
       package_file = windows_safe_path(Config.package_dir, package_name)
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
-        tar -C #{staging_dir} -cJf
+        tar -C #{staging_dir} -cf #{tar_flag}
         #{package_file}
         .
       EOH
@@ -252,6 +266,18 @@ module Omnibus
 
       @oci_architecture = val
     end
+
+    def compression_algorithm(val = nil)
+      if val.nil?
+        @compression_algorithm || "xz"
+      else
+        if val != "gzip" && val != "xz" && val != "ztsd"
+          raise InvalidValue.new(:compression_algorithm, 'be either gzip, xz or zstd')
+        end
+
+        @compression_algorithm = val
+    end
+    expose :compression_algorithm
 
     def compression_threads(val = nil)
       if val.nil?
