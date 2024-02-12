@@ -186,7 +186,17 @@ module Omnibus
     end
 
     def package_name
-      "#{project.package_name}_#{project.build_version}-#{project.build_iteration}_oci_#{oci_architecture}.tar.xz"
+      case compression_algorithm
+      when "gzip"
+        ext = "gz"
+      when "xz"
+        ext = "xz"
+      when "ztsd"
+        ext = "zst"
+      else
+        raise ArgumentError, "Unknown archive format '#{compression_algorithm}'"
+      end
+      "#{project.package_name}_#{project.build_version}-#{project.build_iteration}_oci_#{oci_architecture}.tar.#{ext}"
     end
 
     # The remote_updater packager doesn't support debug packaging
