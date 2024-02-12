@@ -276,6 +276,7 @@ module Omnibus
         end
 
         @compression_algorithm = val
+      end
     end
     expose :compression_algorithm
 
