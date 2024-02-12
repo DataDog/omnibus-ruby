@@ -62,8 +62,8 @@ module Omnibus
       # create the archive
       archive_file = windows_safe_path(staging_dir, intermediate_pkg_name)
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
-        tar -C #{payload_dir} -cf #{tar_flag}
-        #{archive_file}
+        tar -C #{payload_dir} -c #{tar_flag}
+        -f #{archive_file}
         .
       EOH
       measure("Compressing OCI") do
@@ -84,8 +84,8 @@ module Omnibus
       # create the final package
       package_file = windows_safe_path(Config.package_dir, package_name)
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
-        tar -C #{staging_dir} -cf #{tar_flag}
-        #{package_file}
+        tar -C #{staging_dir} -c #{tar_flag}
+        -f #{package_file}
         .
       EOH
       compress_env = { "XZ_OPT" => "-T#{compression_threads} -1" }
