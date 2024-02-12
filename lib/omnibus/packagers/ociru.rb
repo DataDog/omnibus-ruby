@@ -128,7 +128,7 @@ module Omnibus
         },
         "layers": [
           {
-            "mediaType": "application/vnd.oci.image.layer.v1.tar+zstd",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+#{compression_algorithm}",
             "digest": "sha256:#{archive_sha256}",
             "size": archive_size
           }
