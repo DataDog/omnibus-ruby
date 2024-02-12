@@ -26,17 +26,17 @@ module Omnibus
 
     build do
       case compression_algorithm
-        when "gzip"
-          tar_flag = "-z"
-          ext = "gz"
-        when "xz"
-          tar_flag = "-J"
-          ext = "xz"
-        when "ztsd"
-          tar_flag = "-I zstd"
-          ext = "zst"
-        else
-          raise ArgumentError, "Unknown archive format '#{compression_algorithm}'"
+      when "gzip"
+        tar_flag = "-z"
+        ext = "gz"
+      when "xz"
+        tar_flag = "-J"
+        ext = "xz"
+      when "ztsd"
+        tar_flag = "-I zstd"
+        ext = "zst"
+      else
+        raise ArgumentError, "Unknown archive format '#{compression_algorithm}'"
       end
       intermediate_pkg_name = "package.tar.#{ext}"
       # create the payload directory, copy the install_dir and extra files to it
