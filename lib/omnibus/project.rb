@@ -80,6 +80,7 @@ module Omnibus
     def initialize(filepath = nil, manifest = nil)
       @filepath = filepath
       @manifest = manifest
+      @package_summary = {}
     end
 
     #
@@ -1495,7 +1496,7 @@ module Omnibus
           next
         end
         # Run the actual packager
-        packager.run!
+        @package_summary[packager.id] = packager.run!
 
         # Copy the generated package and metadata back into the workspace
         package_path = File.join(Config.package_dir, packager.package_name)
