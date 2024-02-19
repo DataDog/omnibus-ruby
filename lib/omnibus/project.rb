@@ -1403,6 +1403,15 @@ module Omnibus
       m
     end
 
+    def build_summary
+      summary = {"build" => {}}
+      softwares.each do |s|
+        summary["build"][s.name] = s.build_summary
+      end
+      summary["packaging"] = @package_summary
+      summary
+    end
+
     def download
       ThreadPool.new(Config.workers) do |pool|
         softwares.each do |software|
@@ -1446,11 +1455,21 @@ module Omnibus
 
       package_me
       compress_me
+
+      write_build_summary
     end
 
     def write_json_manifest
       File.open(json_manifest_path, "w") do |f|
         f.write(FFI_Yajl::Encoder.encode(built_manifest.to_hash, pretty: true))
+      end
+    end
+
+    def write_build_summary
+      FileUtils.mkdir_p(Config.package_dir)
+      out_path = "#{Config.package_dir}/build-summary.json"
+      File.open(out_path, "w") do |f|
+        f.write(FFI_Yajl::Encoder.encode(build_summary.to_hash, pretty: true))
       end
     end
 
