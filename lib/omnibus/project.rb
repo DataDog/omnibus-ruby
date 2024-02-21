@@ -1404,7 +1404,7 @@ module Omnibus
     end
 
     def build_summary
-      summary = {"build" => {}}
+      summary = { "build" => {} }
       softwares.each do |s|
         summary["build"][s.name] = s.build_summary
       end

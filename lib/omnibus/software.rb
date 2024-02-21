@@ -103,7 +103,7 @@ module Omnibus
       @project  = project
       @manifest = manifest
 
-      @build_summary = {"cached" => false, "build_duration" => 0}
+      @build_summary = { "cached" => false, "build_duration" => 0 }
 
       # Overrides
       @overrides = NULL
