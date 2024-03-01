@@ -27,15 +27,14 @@ module Omnibus
 
     build do
       out_file = windows_safe_path(Config.package_dir, archive_name)
-      log.info(log_key) { "Outputing xz package to #{out_file}" }
       out_source_path = "#{windows_safe_path(project.install_dir)}/*"
+      compress_env = { "XZ_OPT" => "-T#{compression_threads} -#{compression_level}" }
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
         tar -cJf
         #{out_file}
         #{out_source_path}
       EOH
-      log.info(log_key) { "Running #{cmd}" }
-      shellout!(cmd)
+      shellout!(cmd, environment: compress_env)
     end
 
     def debug_build?
@@ -71,5 +70,31 @@ module Omnibus
       end
     end
     expose :safe_architecture
+
+    def compression_threads(val = nil)
+      if val.nil?
+        @compression_threads || 1
+      else
+        unless val > 0 && val < 32
+          raise InvalidValue.new(:compression_threads, 'be a stricly positive and lower than 32 Integer')
+        end
+
+        @compression_threads = val
+      end
+    end
+    expose :compression_threads
+
+    def compression_level(val = nil)
+      if val.nil?
+        @compression_level || 6
+      else
+        unless val >= 0 && val <= 9
+          raise InvalidValue.new(:compression_level, 'be an Integer between 0 and 9 included')
+        end
+
+        @compression_level = val
+      end
+    end
+    expose :compression_level
   end
 end
