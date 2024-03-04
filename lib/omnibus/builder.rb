@@ -762,7 +762,7 @@ module Omnibus
         end
       end
 
-      measure("Build #{software.name}", lambda { |d| software.store_build_duration(d) }) do
+      measure("Build #{software.name}", software.method(:store_build_duration)) do
         build_commands.each do |command|
           execute(command)
         end

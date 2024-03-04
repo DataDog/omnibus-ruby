@@ -27,7 +27,6 @@ module Omnibus
       if duration_cb
         duration_cb.call(elapsed)
       end
-      elapsed
     end
   end
 end
