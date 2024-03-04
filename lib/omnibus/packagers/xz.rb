@@ -63,13 +63,16 @@ module Omnibus
     #   the architecture
     #
     def safe_architecture(val = NULL)
-      if null?(val)
-        @safe_architecture ||= Ohai["kernel"]["machine"]
-      else
-        @safe_architecture = val
-      end
+      val = shellout!("uname --processor").stdout.strip
+
+      val = case val
+            when "x86_64", "x64", "amd64" then "amd64"
+            when "arm64", "aarch64" then "arm64"
+            when "armv7l" then "arm"
+            else raise ArgumentError, "Unknown architecture '#{val}'"
+            end
+      val
     end
-    expose :safe_architecture
 
     def compression_threads(val = nil)
       if val.nil?
