@@ -1446,7 +1446,7 @@ module Omnibus
       write_text_manifest
       HealthCheck.run!(self)
 
-      @strip_duration = Stripper.run!(self) if strip_build
+      Stripper.run!(self, lambda { |d| @strip_duration = d }) if strip_build
 
       # Remove any package this project extends, after the health check ran
       extended_packages.each do |packages, _|
@@ -1516,7 +1516,7 @@ module Omnibus
           next
         end
         # Run the actual packager
-        @package_summary[packager.id] = packager.run!
+        packager.run!(lambda { |d| @package_summary[packager.id] = d })
 
         # Copy the generated package and metadata back into the workspace
         package_path = File.join(Config.package_dir, packager.package_name)

@@ -177,11 +177,11 @@ module Omnibus
     #   - setup
     #   - build
     #
-    def run!
+    def run!(duration_cb = nil)
       # Ensure the package directory exists
       create_directory(Config.package_dir)
 
-      measure("Packaging time") do
+      measure("Packaging time", duration_cb) do
         # Run the setup and build sequences
         instance_eval(&self.class.setup) if self.class.setup
         instance_eval(&self.class.build) if self.class.build

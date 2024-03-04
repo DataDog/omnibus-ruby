@@ -9,8 +9,8 @@ module Omnibus
 
     class << self
       # @see (stripper#new)
-      def run!(project)
-        new(project).run!
+      def run!(project, duration_cb = nil)
+        new(project).run!(duration_cb)
       end
     end
 
@@ -40,8 +40,8 @@ module Omnibus
     # @return [true]
     #   if the checks pass
     #
-    def run!
-      measure("Stripping time") do
+    def run!(duration_cb = nil)
+      measure("Stripping time", duration_cb) do
         log.info(log_key) { "Running strip on #{project.name}" }
         # TODO: properly address missing platforms / linux
         case Ohai["platform"]
