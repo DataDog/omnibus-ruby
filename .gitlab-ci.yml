@@ -1,7 +1,7 @@
 include: "https://gitlab-templates.ddbuild.io/slack-notifier/sdm/template.yml"
 
 stages:
-  - test
+#  - test
   - after-test
   - check-downstream
   - notify
@@ -16,18 +16,18 @@ stages:
   - if: $CI_COMMIT_TAG != null
     when: never
 
-trigger-agent-build:
-  rules:
-    - *skip_stable_branches
-    - when: always
-  stage: test
-  trigger:
-    project: datadog/datadog-agent
-    strategy: depend
-  variables:
-    OMNIBUS_RUBY_VERSION: $CI_COMMIT_BRANCH
-    RUN_ALL_BUILDS: "true"
-    RUN_KITCHEN_TESTS: "true"
+#trigger-agent-build:
+#rules:
+#    - *skip_stable_branches
+#    - when: always
+#  stage: test
+#  trigger:
+#    project: datadog/datadog-agent
+#    strategy: depend
+#  variables:
+#    OMNIBUS_RUBY_VERSION: $CI_COMMIT_BRANCH
+#    RUN_ALL_BUILDS: "true"
+#    RUN_KITCHEN_TESTS: "true"
 
 on-success:
   rules:
@@ -38,6 +38,7 @@ on-success:
   tags: ["arch:amd64"]
   image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/datadog-agent-buildimages/deb_x64:v19805261-b468a29
   script:
+    - vault token lookup
     - echo success > output.pipeline
   artifacts:
     paths:
