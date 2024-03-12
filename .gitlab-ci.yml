@@ -72,7 +72,7 @@ notify:
   rules:
     - *skip_stable_branches
     - when: always
-  script: |
+  script:
     - !reference [.slack-notifier-base, script]
     - export MESSAGE_TEXT="Your omnibus-ruby test pipeline $BUILD_URL completed"
     - postmessage "$SLACK_AUTHOR" "$MESSAGE_TEXT"
