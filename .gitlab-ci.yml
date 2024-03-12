@@ -36,7 +36,7 @@ on-success:
   stage: after-test
   needs: ["trigger-agent-build"]
   tags: ["arch:amd64"]
-  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/datadog-agent-buildimages/deb_x64:v19805261-b468a29
+  image: registry.ddbuild.io/images/mirror/ubuntu:22.04
   script:
     - echo success > output.pipeline
   artifacts:
@@ -60,7 +60,7 @@ check-downstream-pipeline:
     - when: always
   stage: check-downstream
   tags: ["arch:amd64"]
-  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/datadog-agent-buildimages/deb_x64:v19805261-b468a29
+  image: registry.ddbuild.io/images/mirror/ubuntu:22.04
   when: always
   script:
     - cat output.pipeline
