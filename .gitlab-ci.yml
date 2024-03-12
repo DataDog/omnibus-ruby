@@ -17,7 +17,7 @@ stages:
     when: never
 
 trigger-agent-build:
-rules:
+  rules:
     - *skip_stable_branches
     - when: always
   stage: test
