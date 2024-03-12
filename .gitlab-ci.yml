@@ -1,4 +1,4 @@
-include: "https://gitlab-templates.ddbuild.io/slack-notifier/sdm/template.yml"
+include: "https://gitlab-templates.ddbuild.io/slack-notifier/v3-sdm/template.yml"
 
 stages:
 #  - test
@@ -73,5 +73,6 @@ notify:
     - *skip_stable_branches
     - when: always
   script: |
-    export MESSAGE="Your omnibus-ruby test pipeline completed"
-    /usr/local/bin/notify.sh
+    - !reference [.slack-notifier-base, script]
+    - export MESSAGE_TEXT="Your omnibus-ruby test pipeline $BUILD_URL completed"
+    - postmessage "$SLACK_AUTHOR" "$MESSAGE_TEXT"
