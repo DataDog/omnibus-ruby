@@ -36,10 +36,8 @@ on-success:
   stage: after-test
   #needs: ["trigger-agent-build"]
   tags: ["arch:amd64"]
-  #image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/datadog-agent-buildimages/deb_x64:v19805261-b468a29
-  image: registry.ddbuild.io/slack-notifier:v25471213-4cb80b9-sdm-gbi-jammy
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/datadog-agent-buildimages/deb_x64:v19805261-b468a29
   script:
-    - vault token lookup
     - echo success > output.pipeline
   artifacts:
     paths:
