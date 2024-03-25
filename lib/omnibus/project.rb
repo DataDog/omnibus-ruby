@@ -1422,7 +1422,9 @@ module Omnibus
     end
 
     def build
-      FileUtils.rm_rf(install_dir)
+      if @clear_install_dir
+        FileUtils.rm_rf(install_dir)
+      end
       FileUtils.mkdir_p(install_dir)
 
       packager = packagers_for_system[0]
@@ -1614,6 +1616,19 @@ module Omnibus
         digest.hexdigest
       end
     end
+
+    def clear_install_dir(val = nil)
+      if val.nil?
+        if @clear_install_dir.nil?
+          true
+        else
+          @clear_install_dir
+        end
+      else
+        @clear_install_dir = val
+      end
+    end
+    expose :clear_install_dir
 
     #
     # @!endgroup
