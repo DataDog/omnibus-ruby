@@ -32,7 +32,7 @@ module Omnibus
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
         tar -cJf
         #{out_file}
-        #{input_paths}
+        #{input_paths.join(" ")}
       EOH
       shellout!(cmd, environment: compress_env)
     end
