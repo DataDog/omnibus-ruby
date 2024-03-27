@@ -28,6 +28,9 @@ module Omnibus
     build do
       out_file = windows_safe_path(Config.package_dir, archive_name)
       input_paths = "#{windows_safe_path(project.install_dir)}/*"
+      project.extra_package_files.each do |file|
+        input_paths = "#{input_paths} #{file}"
+      end
       compress_env = { "XZ_OPT" => "-T#{compression_threads} -#{compression_level}" }
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
         tar -cJf
