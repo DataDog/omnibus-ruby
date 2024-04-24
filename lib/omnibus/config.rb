@@ -178,6 +178,8 @@ module Omnibus
 
     default(:host_distribution, nil)
 
+    default(:install_dir, nil)
+
     #
     # @!group DMG / PKG configuration options
     # --------------------------------------------------
