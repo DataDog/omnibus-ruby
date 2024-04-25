@@ -726,7 +726,7 @@ module Omnibus
           }
         when "mac_os_x", "macos"
           {
-            "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib",
+            "LDFLAGS" => "-Wl,-rpath,$ORIGIN/embedded/lib -L#{install_dir}/embedded/lib",
             "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
         when "solaris2"
@@ -741,7 +741,7 @@ module Omnibus
           elsif platform_version.satisfies?(">= 5.11")
             solaris_flags = {
               "CC" => "gcc -m64 -static-libgcc",
-              "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc",
+              "LDFLAGS" => "-Wl,-rpath,$ORIGIN/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc",
               "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
             }
           end
@@ -786,7 +786,7 @@ module Omnibus
           }
         else
           {
-            "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib",
+            "LDFLAGS" => "-Wl,-rpath,$ORIGIN/embedded/lib -L#{install_dir}/embedded/lib",
             "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
         end
