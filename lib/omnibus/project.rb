@@ -81,6 +81,7 @@ module Omnibus
       @filepath = filepath
       @manifest = manifest
       @package_summary = {}
+      @disable_healthcheck = false
     end
 
     #
@@ -1444,7 +1445,9 @@ module Omnibus
 
       write_json_manifest
       write_text_manifest
-      HealthCheck.run!(self)
+      unless @disable_healthcheck
+        HealthCheck.run!(self)
+      end
 
       Stripper.run!(self) if strip_build
 
@@ -1615,6 +1618,14 @@ module Omnibus
       end
     end
 
+    def disable_healthcheck(val)
+      if val.nil?
+        @disable_healthcheck
+      else
+        @disable_healthcheck = val
+      end
+    end
+    expose :disable_healthcheck
     #
     # @!endgroup
     # --------------------------------------------------
