@@ -35,10 +35,16 @@ module Omnibus
         #{input_paths.join(" ")}
       EOH
       shellout!(cmd, environment: compress_env)
-    end
 
-    def debug_build?
-      false
+      if debug_build?
+        out_file = windows_safe_path(Config.package_dir, archive_name(true))
+        cmd = <<-EOH.split.join(" ").squeeze(" ").strip
+          tar -cJf
+          #{out_file}
+          #{debug_package_paths.map{ |dir| File.join(install_dir, dir) }.join(' ')}
+        EOH
+        shellout!(cmd, environment: compress_env)
+      end
     end
 
     # @see Base#package_name
@@ -46,8 +52,8 @@ module Omnibus
       archive_name
     end
 
-    def archive_name
-      "#{project.package_name}-#{project.build_version}-#{project.build_iteration}-#{safe_architecture}.tar.xz"
+    def archive_name(debug = false)
+      "#{project.package_name}#{debug ? "-dbg" : ""}-#{project.build_version}-#{project.build_iteration}-#{safe_architecture}.tar.xz"
     end
 
     #
