@@ -26,7 +26,7 @@ module Omnibus
     end
 
     build do
-      out_file = windows_safe_path(Config.package_dir, archive_name)
+      out_file = windows_safe_path(Config.package_dir, package_name)
       input_paths = ["#{windows_safe_path(project.install_dir)}/*"] + project.extra_package_files
       compress_env = { "XZ_OPT" => "-T#{compression_threads} -#{compression_level}" }
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
@@ -37,7 +37,7 @@ module Omnibus
       shellout!(cmd, environment: compress_env)
 
       if debug_build?
-        out_file = windows_safe_path(Config.package_dir, archive_name(true))
+        out_file = windows_safe_path(Config.package_dir, package_name(true))
         cmd = <<-EOH.split.join(" ").squeeze(" ").strip
           tar -cJf
           #{out_file}
@@ -48,11 +48,7 @@ module Omnibus
     end
 
     # @see Base#package_name
-    def package_name
-      archive_name
-    end
-
-    def archive_name(debug = false)
+    def package_name(debug = false)
       "#{project.package_name}#{debug ? "-dbg" : ""}-#{project.build_version}-#{project.build_iteration}-#{safe_architecture}.tar.xz"
     end
 
