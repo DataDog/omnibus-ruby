@@ -41,7 +41,7 @@ module Omnibus
         cmd = <<-EOH.split.join(" ").squeeze(" ").strip
           tar -cJf
           #{out_file}
-          #{debug_package_paths.map{ |dir| File.join(install_dir, dir) }.join(' ')}
+          #{debug_package_paths.map { |dir| File.join(install_dir, dir) }.join(' ')}
         EOH
         shellout!(cmd, environment: compress_env)
       end
