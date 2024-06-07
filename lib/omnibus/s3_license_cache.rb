@@ -162,10 +162,6 @@ module Omnibus
           raise InsufficientSpecification.new(:version, software)
         end
 
-        unless software.hash
-          raise InsufficientSpecification.new(:hash, software)
-        end
-
         # We add a custom hash of the software recipe in the cache key. It's an accurate way
         # to know if a software definition changed, as it takes into account the
         # resolved version (ie. the git commit hash if the source is a git repository,
