@@ -173,9 +173,7 @@ module Omnibus
         # This assumes all our softwares have an associated recipe file, unlike what's
         # done by omnibus in software.shasum
         update_with_file_contents(digest, software.filepath)
-        key = "licenses/#{software.name}-#{software.version}-#{digest.hexdigest}/#{File.basename(license_file)}"
-        log.info(log_key) { "Using license key: #{key}"}
-        key
+        "licenses/#{software.name}-#{software.version}-#{digest.hexdigest}/#{File.basename(license_file)}"
       end
 
       private
