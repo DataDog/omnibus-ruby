@@ -27,7 +27,8 @@ module Omnibus
     # @return [true, false]
     #
     def fetch_required?
-      target_shasum != destination_shasum
+      log.info(log_key) { "Checking if fetch is required" }
+      true
     end
 
     #
@@ -67,7 +68,6 @@ module Omnibus
         FileSyncer.sync(source_path, project_dir, source_options)
         # Reset target shasum on every fetch
         @target_shasum = nil
-        target_shasum
       }
     end
 
