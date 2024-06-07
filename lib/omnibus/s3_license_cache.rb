@@ -56,7 +56,13 @@ module Omnibus
       # @return [Array<String>]
       #
       def keys
+        log.info(log_key) do
+          "Fetching license cache"
+        end
         bucket.objects.map(&:key)
+        log.info(log_key) do
+          "Done fetching license cache"
+        end
       end
 
       #
@@ -71,6 +77,9 @@ module Omnibus
         missing_license_files = []
 
         softwares.each do |software|
+          log.info(log_key) do
+            "Checking cached status of license for '#{software.name}'"
+          end
           license_files = software.license_files
           # If the license is a standard license, use the STANDARD_LICENSES URL associated with it
           if software.license_files.empty? && Licensing::STANDARD_LICENSES.keys.include?(software.license)

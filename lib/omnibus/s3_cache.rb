@@ -43,7 +43,13 @@ module Omnibus
       # @return [Array<String>]
       #
       def keys
+        log.info(log_key) do
+          "Getting bucket contents"
+        end
         client.bucket(Config.s3_bucket).objects.map(&:key)
+        log.info(log_key) do
+          "Done getting bucket contents"
+        end
       end
 
       #
@@ -54,6 +60,9 @@ module Omnibus
       def missing
         cached = keys
         softwares.select do |software|
+          log.info(log_key) do
+            "Checking cached status of '#{software.name}'"
+          end
           key = key_for(software)
           !cached.include?(key)
         end
