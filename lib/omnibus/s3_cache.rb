@@ -65,7 +65,13 @@ module Omnibus
       # @return [true]
       #
       def populate
+        log.info(log_key) do
+          "Populating cache"
+        end
         missing.each do |software|
+          log.info(log_key) do
+            "Populating software #{software.name}"
+          end
           without_caching do
             software.fetch
           end
@@ -96,7 +102,13 @@ module Omnibus
       # @return [true]
       #
       def fetch_missing
+        log.info(log_key) do
+          "Fetching missing software"
+        end
         missing.each do |software|
+          log.info(log_key) do
+            "Fetching missing software #{software.name}"
+          end
           without_caching do
             software.fetch
           end
