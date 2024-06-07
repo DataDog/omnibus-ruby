@@ -176,8 +176,8 @@ module Omnibus
         digest = Digest::SHA256.new
         # This assumes all our softwares have an associated recipe file, unlike what's
         # done by omnibus in software.shasum
-        software_hash = update_with_file_contents(digest, software.filepath)
-        key = "licenses/#{software.name}-#{software.version}-#{software_hash.hexdigest}/#{File.basename(license_file)}"
+        update_with_file_contents(digest, software.filepath)
+        key = "licenses/#{software.name}-#{software.version}-#{digest.hexdigest}/#{File.basename(license_file)}"
         log.info(log_key) { "Using license key: #{key}"}
         key
       end
