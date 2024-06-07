@@ -167,8 +167,11 @@ module Omnibus
         # resolved version (ie. the git commit hash if the source is a git repository,
         # the hashsum of the downloaded file if the source is a remote file), the project,
         # and all build commands run in the software definition.
-        # We can't rely on the software.shasum directly as it includes the hash of all the other
-        # softwares it depends on, which causes the checksum to change way too often.
+        # We can't rely on the software.shasum directly: software.shasum includes
+        # project.shasum, which value depends on the install directory.
+        # As our OCI builds change their install directory for each pipeline by design,
+        # this would end up creating a new cache entry for every pipeline, ultimately
+        # heavily slowing down each cache lookup.
         digest = Digest::SHA256.new
         # This assumes all our softwares have an associated recipe file, unlike what's
         # done by omnibus in software.shasum
