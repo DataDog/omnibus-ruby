@@ -163,10 +163,8 @@ module Omnibus
         end
 
         # We add a custom hash of the software recipe in the cache key. It's an accurate way
-        # to know if a software definition changed, as it takes into account the
-        # resolved version (ie. the git commit hash if the source is a git repository,
-        # the hashsum of the downloaded file if the source is a remote file), the project,
-        # and all build commands run in the software definition.
+        # to know if a software definition changed, as it takes into account recipe file
+        # which contains the software version and all the commands used to build it
         # We can't rely on the software.shasum directly: software.shasum includes
         # project.shasum, which value depends on the install directory.
         # As our OCI builds change their install directory for each pipeline by design,
