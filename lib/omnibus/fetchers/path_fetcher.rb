@@ -21,13 +21,15 @@ module Omnibus
     @@source_path_mutexes = Hash.new { |h, k| h[k] = Mutex.new }
 
     #
-    # Fetch if the local directory checksum is different than the path directory
-    # checksum.
+    # Always fetch the local directory
+    # HACK: compared to upstream, makes fetching faster due to not having to compute hashes of large directories
+    # The downside of this is potentially copying sources using the PathFetcher when it is not needed (because of no changes)
+    # but this should be rare in Datadog projects, since the main use of the PathFetcher is for the git repository of the project.
     #
     # @return [true, false]
     #
     def fetch_required?
-      target_shasum != destination_shasum
+      true
     end
 
     #
@@ -67,7 +69,6 @@ module Omnibus
         FileSyncer.sync(source_path, project_dir, source_options)
         # Reset target shasum on every fetch
         @target_shasum = nil
-        target_shasum
       }
     end
 
