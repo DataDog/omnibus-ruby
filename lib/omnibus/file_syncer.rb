@@ -90,6 +90,7 @@ module Omnibus
           includes.none? { |include| File.fnmatch?(include, basename, File::FNM_DOTMATCH) }
         end
       end
+      log.info(log_key) { "Syncing: #{source_files}"}
 
       source_files
     end
