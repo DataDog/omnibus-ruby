@@ -785,11 +785,25 @@ module Omnibus
             "CFLAGS" => "-I#{install_dir}/embedded/include #{arch_flag} -O2 -fno-lto #{opt_flag}",
           }
         else
-          {
+          flags = {
             # -z origin makes the rpath interpret the $ORIGIN variable as the binary path
             "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib,-z,origin  -L#{install_dir}/embedded/lib -Wl,-rpath-link=#{install_dir}/embedded/lib",
             "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
+          if ENV["DD_CC"]
+            flags["CC"] = ENV["DD_CC"]
+            # Forward the toolchain env since some invoke tasks
+            # rely on it down the line
+            flags["DD_CC"] = ENV["DD_CC"]
+          end
+          if ENV["DD_CXX"]
+            flags["CXX"] = ENV["DD_CXX"]
+            flags["DD_CXX"] = ENV["DD_CXX"]
+          end
+          if ENV["DD_CMAKE_TOOLCHAIN"]
+            flags["DD_CMAKE_TOOLCHAIN"] = ENV["DD_CMAKE_TOOLCHAIN"]
+          end
+          flags
         end
 
       # merge LD_RUN_PATH into the environment.  most unix distros will fall
