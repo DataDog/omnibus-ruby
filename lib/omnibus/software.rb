@@ -726,7 +726,7 @@ module Omnibus
           }
         when "mac_os_x", "macos"
           {
-            "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib,-z,origin",
+            "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib,-z origin",
             "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
         when "solaris2"
@@ -735,13 +735,13 @@ module Omnibus
               # this override is due to a bug in libtool documented here:
               # http://lists.gnu.org/archive/html/bug-libtool/2005-10/msg00004.html
               "CC" => "gcc -static-libgcc",
-              "LDFLAGS" => "-R#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc,-z,origin",
+              "LDFLAGS" => "-R#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc,-z origin",
               "CFLAGS" => "-I#{install_dir}/embedded/include",
             }
           elsif platform_version.satisfies?(">= 5.11")
             solaris_flags = {
               "CC" => "gcc -m64 -static-libgcc",
-              "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc,-z,origin",
+              "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc,-z origin",
               "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
             }
           end
@@ -786,7 +786,7 @@ module Omnibus
           }
         else
           {
-            "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib,-z,origin",
+            "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib,-z origin",
             "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
         end
