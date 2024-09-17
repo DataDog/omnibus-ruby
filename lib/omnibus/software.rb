@@ -726,7 +726,7 @@ module Omnibus
           }
         when "mac_os_x", "macos"
           {
-            "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib,-z,origin -L#{install_dir}/embedded/lib",
+            "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib",
             "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
         when "solaris2"
