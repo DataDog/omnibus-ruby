@@ -136,6 +136,7 @@ module Omnibus
       # Symlink of the previous one
       /libgcc_s\.1\.dylib/,
       /libz\.1\.dylib/,
+      /libdatadog-agent-rtloader\.1\.dylib/,
       /CoreFoundation/,
       /CoreServices/,
       /Tcl$/,
