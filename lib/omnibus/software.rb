@@ -741,7 +741,7 @@ module Omnibus
           elsif platform_version.satisfies?(">= 5.11")
             solaris_flags = {
               "CC" => "gcc -m64 -static-libgcc",
-              "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc,-z,origin",
+              "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib -L#{install_dir}/embedded/lib -static-libgcc",
               "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
             }
           end
