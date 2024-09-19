@@ -553,7 +553,7 @@ module Omnibus
           #         name /opt/datadog-agent/embedded/lib (offset 12)
           yield_shellout_results("otool -l #{current_library} | grep LC_RPATH -A2 | grep path | awk '{ print $2 }'") do |rpath|
             # The rpath variable contains a \n (\r\n on Windows), so we remove it when including it in the complete path
-            # If @rpath contains @loader_path we're replacing it with it's actual loader_path
+            # We also resolve possible `@loader_path` references
             possible_paths << linked.sub("@rpath", rpath.chop).sub("@loader_path", loader_path)
           end
         # Do the linker's work of replacing @loader_path by the directory the library that's using the dependency is in
