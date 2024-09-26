@@ -797,7 +797,7 @@ module Omnibus
             "DD_CXX" => "CXX",
             "DD_CMAKE_TOOLCHAIN" => nil,
           }
-          to_forward.each do |orig,forwarded|
+          to_forward.each do |orig, forwarded|
             if ENV[orig]
               flags[forwarded] = ENV[orig] if forwarded
               # Forward the toolchain env since some invoke tasks
