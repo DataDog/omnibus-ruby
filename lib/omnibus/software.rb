@@ -790,18 +790,20 @@ module Omnibus
             "LDFLAGS" => "-Wl,-rpath,#{install_dir}/embedded/lib,-z,origin  -L#{install_dir}/embedded/lib -Wl,-rpath-link=#{install_dir}/embedded/lib",
             "CFLAGS" => "-I#{install_dir}/embedded/include -O2",
           }
-          if ENV["DD_CC"]
-            flags["CC"] = ENV["DD_CC"]
-            # Forward the toolchain env since some invoke tasks
-            # rely on it down the line
-            flags["DD_CC"] = ENV["DD_CC"]
-          end
-          if ENV["DD_CXX"]
-            flags["CXX"] = ENV["DD_CXX"]
-            flags["DD_CXX"] = ENV["DD_CXX"]
-          end
-          if ENV["DD_CMAKE_TOOLCHAIN"]
-            flags["DD_CMAKE_TOOLCHAIN"] = ENV["DD_CMAKE_TOOLCHAIN"]
+          # List of environment variables to forward and potentially map to an alternate name
+          # If the value is nil, the key will simply be forwarded from ENV to flags
+          to_forward = {
+            "DD_CC" => "CC",
+            "DD_CXX" => "CXX",
+            "DD_CMAKE_TOOLCHAIN" => nil,
+          }
+          to_forward.each do |orig,forwarded|
+            if ENV[orig]
+              flags[forwarded] = ENV[orig] if forwarded
+              # Forward the toolchain env since some invoke tasks
+              # rely on it down the line
+              flags[orig] = ENV[orig]
+            end
           end
           flags
         end
