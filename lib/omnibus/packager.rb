@@ -62,8 +62,11 @@ module Omnibus
     # @return [[~Packager::Base]]
     #
     def for_current_system
-      family = Ohai["platform_family"]
-      version = Ohai["platform_version"]
+      family = Omnibus::Config.host_distribution()
+      if family.nil?
+        family = Ohai["platform_family"]
+        version = Ohai["platform_version"]
+      end
 
       if family == "solaris2" && Chef::Sugar::Constraints::Version.new(version).satisfies?(">= 5.11")
         family = "ips"
