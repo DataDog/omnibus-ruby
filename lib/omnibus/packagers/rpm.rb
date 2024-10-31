@@ -521,6 +521,8 @@ module Omnibus
             # seems to fail for packages with a lot files, like datadog-agent, with CentOS 6
             # version of `popt`
             shellout!("#{command}", environment: { "HOME" => home })
+            shellout!("ls -R /tmp/datadog-installer20241031-1261-ynnp3h/RPMS")
+            shellout!("ls -l /tmp/datadog-installer20241031-1261-ynnp3h/RPMS/**/*.rpm")
             shellout!("GPG_TTY=$(tty) rpm -vv --addsign #{stage}/RPMS/**/*.rpm", environment: { "HOME" => home })
           end
         else
