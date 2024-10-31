@@ -453,7 +453,7 @@ module Omnibus
                         config_files: config_files,
                         files: files,
                         build_dir: build_dir(debug),
-                        platform_family: Ohai["platform_family"],
+                        platform_family: "rhel",#Ohai["platform_family"],
                         compression_level: compression_level,
                         compression_threads: compression_threads,
                         compression_algo: compression_algo,
@@ -521,9 +521,7 @@ module Omnibus
             # seems to fail for packages with a lot files, like datadog-agent, with CentOS 6
             # version of `popt`
             shellout!("#{command}", environment: { "HOME" => home })
-            shellout!("ls -R /tmp/datadog-installer20241031-1261-ynnp3h/RPMS")
-            shellout!("ls -l /tmp/datadog-installer20241031-1261-ynnp3h/RPMS/**/*.rpm")
-            shellout!("GPG_TTY=$(tty) rpm -vv --addsign #{stage}/RPMS/**/*.rpm", environment: { "HOME" => home })
+            shellout!("rpm --addsign #{stage}/RPMS/**/*.rpm", environment: { "HOME" => home })
           end
         else
           command << " --sign"
