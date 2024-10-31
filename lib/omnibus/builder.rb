@@ -217,6 +217,10 @@ module Omnibus
       # Accept a prefix override if provided. Can be set to '' to suppress
       # this functionality.
       prefix = options.delete(:prefix) || "#{install_dir}/embedded"
+
+      if windows_target?
+        prefix.sub! "C:/", "/c/"
+      end
       configure_cmd << "--prefix=#{prefix}" if prefix && prefix != ""
 
       configure_cmd.concat args
