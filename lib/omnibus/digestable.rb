@@ -138,6 +138,7 @@ module Omnibus
     # @return [void]
     #
     def update_with_string(digest, string)
+      log.debug(log_key) { "Updating hash with value #{string}"}
       digest.update(string)
     end
   end

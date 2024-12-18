@@ -1341,6 +1341,7 @@ module Omnibus
       @shasum ||= begin
         digest = Digest::SHA256.new
 
+        log.debug(log_key) { "Generating shasum for #{self.name}"}
         update_with_string(digest, project.shasum)
         update_with_string(digest, builder.shasum)
         update_with_string(digest, name)
