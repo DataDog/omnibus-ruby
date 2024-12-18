@@ -121,6 +121,7 @@ module Omnibus
     def update_with_file_contents(digest, filename)
       File.open(filename) do |io|
         while (chunk = io.read(1024 * 8))
+          log.debug(log_key) { "Using file chunk: #{chunk}-----"}
           digest.update(chunk)
         end
       end
