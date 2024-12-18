@@ -1342,11 +1342,17 @@ module Omnibus
         digest = Digest::SHA256.new
 
         log.debug(log_key) { "Generating shasum for #{self.name}"}
+        log.debug(log_key) { "Updating hash with value #{project.shasum}"}
         update_with_string(digest, project.shasum)
+        log.debug(log_key) { "Updating hash with value #{builder.shasum}"}
         update_with_string(digest, builder.shasum)
+        log.debug(log_key) { "Updating hash with value #{name}"}
         update_with_string(digest, name)
+        log.debug(log_key) { "Updating hash with value #{version_for_cache}"}
         update_with_string(digest, version_for_cache)
-        update_with_string(digest, FFI_Yajl::Encoder.encode(overrides))
+        log.debug(log_key) { "Updating hash with value #{version_for_cache}"}
+        overrides =FFI_Yajl::Encoder.encode(overrides)
+        update_with_string(digest, overrides)
 
         if filepath && File.exist?(filepath)
           update_with_file_contents(digest, filepath)
