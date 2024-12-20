@@ -209,7 +209,8 @@ module Omnibus
       # arrive at differently terrible wild ass guesses for what MSYSTEM=MINGW64
       # means. This can be anything from x86_64-pc-mingw64 to i686-pc-mingw32
       # which doesn't even make any sense...
-      if windows?
+      no_force_build = options.delete(:no_build_triplet) || false
+      if windows? && !no_force_build
         platform = windows_arch_i386? ? "i686-w64-mingw32" : "x86_64-w64-mingw32"
         configure_cmd << "--build=#{platform}"
       end
