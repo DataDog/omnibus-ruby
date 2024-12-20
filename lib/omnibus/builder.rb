@@ -216,7 +216,8 @@ module Omnibus
 
       # Accept a prefix override if provided. Can be set to '' to suppress
       # this functionality.
-      prefix = options.delete(:prefix) || "#{install_dir}/embedded"
+      default_prefix = unless windows? then "#{install_dir}/embedded" else python_3_embedded end
+      prefix = options.delete(:prefix) || default_prefix
       configure_cmd << "--prefix=#{prefix}" if prefix && prefix != ""
 
       configure_cmd.concat args
