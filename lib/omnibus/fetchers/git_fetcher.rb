@@ -152,6 +152,7 @@ module Omnibus
     #
     def git_clone
       retry_block("custom git clone", [CommandTimeout, CommandFailed]) do
+        log.info(log_key) { "Cloning repository #{source_url} at revision #{resolved_version}" }
         git("init")
         git("remote add origin #{source_url}")
         git("fetch origin #{resolved_version}")
