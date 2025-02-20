@@ -1626,6 +1626,17 @@ module Omnibus
       end
     end
     expose :skip_healthcheck
+
+    def disable_version_manifest(val)
+      if val.nil?
+        @disable_version_manifest
+      else
+        @disable_version_manifest = val
+      end
+    end
+    expose disable_version_manifest
+
+
     #
     # @!endgroup
     # --------------------------------------------------
