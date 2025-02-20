@@ -1636,7 +1636,7 @@ module Omnibus
         @disable_version_manifest = val
       end
     end
-    expose disable_version_manifest
+    expose :disable_version_manifest
 
     #
     # @!endgroup
