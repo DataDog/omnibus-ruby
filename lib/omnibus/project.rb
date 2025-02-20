@@ -1443,8 +1443,10 @@ module Omnibus
       # Install shipped sources in the sources/ folder
       install_sources
 
-      write_json_manifest
-      write_text_manifest
+      unless @disable_version_manifest
+        write_json_manifest
+        write_text_manifest
+      end
       unless @skip_healthcheck
         HealthCheck.run!(self)
       end
