@@ -1638,7 +1638,6 @@ module Omnibus
     end
     expose disable_version_manifest
 
-
     #
     # @!endgroup
     # --------------------------------------------------
