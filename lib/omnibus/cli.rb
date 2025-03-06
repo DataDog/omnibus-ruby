@@ -70,10 +70,6 @@ module Omnibus
                   desc: "Use the given manifest when downloading software sources.",
                   type: :string,
                   default: nil
-    method_option :populate_s3_cache,
-                  desc: "Populate the S3 cache.",
-                  type: :boolean,
-                  default: false
     desc "build PROJECT", "Build the given Omnibus project"
     def build(name)
       manifest = if @options[:use_manifest]
