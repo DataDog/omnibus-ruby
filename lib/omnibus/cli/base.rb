@@ -51,7 +51,7 @@ module Omnibus
       end
 
       if File.exist?(@options[:config])
-        log.info(log_key) { "Using config from '#{@options[:config]}'" }
+        log.info(log_key) { "[TEST] Using config from '#{@options[:config]}'" }
         Omnibus.load_configuration(@options[:config])
       else
         if @options[:config] == Omnibus::DEFAULT_CONFIG
