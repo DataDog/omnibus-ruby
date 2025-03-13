@@ -84,7 +84,7 @@ module Omnibus
       warn_for_shell_commands(command)
 
       build_commands << BuildCommand.new("Execute: `#{command}'") do
-        shellout!(command, options)
+        shellout!(command, **options)
       end
     end
     expose :command
@@ -313,7 +313,7 @@ module Omnibus
       patches << patch_path
       options[:in_msys_bash] = true
       build_commands << BuildCommand.new("Apply patch `#{source}'") do
-        shellout!(patch_cmd, options)
+        shellout!(patch_cmd, **options)
       end
     end
     expose :patch
@@ -365,7 +365,7 @@ module Omnibus
     def ruby(command, options = {})
       build_commands << BuildCommand.new("ruby `#{command}'") do
         bin = embedded_bin("ruby")
-        shellout!("#{bin} #{command}", options)
+        shellout!("#{bin} #{command}", **options)
       end
     end
     expose :ruby
@@ -382,7 +382,7 @@ module Omnibus
     def gem(command, options = {})
       build_commands << BuildCommand.new("gem `#{command}'") do
         bin = embedded_bin("gem")
-        shellout!("#{bin} #{command}", options)
+        shellout!("#{bin} #{command}", **options)
       end
     end
     expose :gem
@@ -402,7 +402,7 @@ module Omnibus
     def bundle(command, options = {})
       build_commands << BuildCommand.new("bundle `#{command}'") do
         bin = embedded_bin("bundle")
-        shellout!("#{bin} #{command}", options)
+        shellout!("#{bin} #{command}", **options)
       end
     end
     expose :bundle
@@ -453,7 +453,7 @@ module Omnibus
     def rake(command, options = {})
       build_commands << BuildCommand.new("rake `#{command}'") do
         bin = embedded_bin("rake")
-        shellout!("#{bin} #{command}", options)
+        shellout!("#{bin} #{command}", **options)
       end
     end
     expose :rake
@@ -687,7 +687,7 @@ module Omnibus
           raise "no matched files for glob #{command}" if files.empty? && !options[:force]
 
           files.each do |file|
-            FileUtils.ln_s(file, destination, options)
+            FileUtils.ln_s(file, destination, **options)
           end
         end
       end
@@ -706,7 +706,7 @@ module Omnibus
     def sync(source, destination, options = {})
       build_commands << BuildCommand.new("sync `#{source}' to `#{destination}'") do
         Dir.chdir(software.project_dir) do
-          FileSyncer.sync(source, destination, options)
+          FileSyncer.sync(source, destination, **options)
         end
       end
     end
@@ -926,9 +926,9 @@ module Omnibus
 
       # Use Util's shellout
       if not acceptable_output
-        super(command_string, options)
+        super(command_string, **options)
       else
-        cmd = shellout(command_string, options)
+        cmd = shellout(command_string, **options)
         if cmd.stdout.include? acceptable_output or cmd.stderr.include? acceptable_output
           cmd
         else
