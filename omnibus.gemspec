@@ -23,7 +23,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_dependency "chef-sugar",       "~> 3.3"
-  gem.add_dependency "cleanroom",        "~> 1.0"
+  gem.add_dependency "chef-cleanroom",   "~> 1.0"
   gem.add_dependency "mixlib-shellout",  "~> 2.0"
   gem.add_dependency "mixlib-versioning"
   gem.add_dependency "pedump"
