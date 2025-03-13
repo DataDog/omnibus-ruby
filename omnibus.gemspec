@@ -24,20 +24,20 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency "chef-sugar",       "~> 3.3"
   gem.add_dependency "chef-cleanroom",   "~> 1.0"
-  gem.add_dependency "mixlib-shellout",  "~> 2.0"
+  gem.add_dependency "mixlib-shellout",  ">= 2.0", "< 4.0"
   gem.add_dependency "mixlib-versioning"
   gem.add_dependency "pedump"
 
-  gem.add_dependency "ohai",             "~> 16"
+  gem.add_dependency "ohai",             ">= 16", "< 19"
   gem.add_dependency "ruby-progressbar", "~> 1.7"
   gem.add_dependency "aws-sdk-s3",       "~> 1.116.0"
-  gem.add_dependency "thor",             "~> 0.18"
+  gem.add_dependency "thor",             ">= 0.18", "< 2.0"
   gem.add_dependency "ffi-yajl",         "~> 2.3.4"
-  gem.add_dependency "license_scout",    "~> 1.0"
+  gem.add_dependency "license_scout",    "~> 1.3.17"
 
   gem.add_dependency 'httparty'
   # Must be pinned otherwise it does not compile on rpm based on centos6
-  gem.add_dependency 'ffi', '=1.15.5'
+  gem.add_dependency 'ffi', "<= 1.17.0"
 
   gem.add_development_dependency "bundler"
   gem.add_development_dependency "artifactory", "~> 2.0"
