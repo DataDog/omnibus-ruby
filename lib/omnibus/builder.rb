@@ -723,7 +723,7 @@ module Omnibus
     #       config.guess.to. Default: "."
     #     install [Array<Symbol>] parts of config.guess to copy.
     #       Default: [:config_guess, :config_sub]
-    def update_config_guess(target: ".", install: [:config_guess, :config_sub])
+    def update_config_guess(target: ".", install: %i{config_guess config_sub})
       build_commands << BuildCommand.new("update_config_guess `target: #{target} install: #{install.inspect}'") do
         config_guess_dir = "#{install_dir}/embedded/lib/config_guess"
         %w{config.guess config.sub}.each do |c|
