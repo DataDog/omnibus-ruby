@@ -34,6 +34,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency "thor",             ">= 0.18", "< 2.0"
   gem.add_dependency "ffi-yajl",         "~> 2.3.4"
   gem.add_dependency "license_scout",    "~> 1.3.17"
+  gem.add_dependency "rexml",            "~> 3.4"
 
   gem.add_dependency 'httparty'
   # Must be pinned otherwise it does not compile on rpm based on centos6
