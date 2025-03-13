@@ -100,7 +100,7 @@ module Omnibus
       if Ohai['platform'] == "windows"
         pip_path = "\"#{windows_safe_path(install_dir)}\\embedded\\Scripts\\pip.exe\""
       end
-      command("#{pip_path} #{subcommand}", options)
+      command("#{pip_path} #{subcommand}", **options)
     end
     expose :pip
 
@@ -109,7 +109,7 @@ module Omnibus
       if Ohai['platform'] == "windows"
         pip_path = "\"#{windows_safe_path(python_2_embedded)}\\Scripts\\pip.exe\""
       end
-      command("#{pip_path} #{subcommand}", options)
+      command("#{pip_path} #{subcommand}", **options)
     end
     expose :py2pip
 
@@ -118,7 +118,7 @@ module Omnibus
       if Ohai['platform'] == "windows"
         pip_path = "\"#{windows_safe_path(python_3_embedded)}\\Scripts\\pip.exe\""
       end
-      command("#{pip_path} #{subcommand}", options)
+      command("#{pip_path} #{subcommand}", **options)
     end
     expose :py3pip
 
@@ -158,7 +158,7 @@ module Omnibus
 
       options[:in_msys_bash] = true
       make_cmd = ([make] + args).join(" ").strip
-      command(make_cmd, options)
+      command(make_cmd, **options)
     end
     expose :make
 
@@ -225,7 +225,7 @@ module Omnibus
       configure_cmd = configure_cmd.join(" ").strip
 
       options[:in_msys_bash] = true
-      command(configure_cmd, options)
+      command(configure_cmd, **options)
     end
     expose :configure
 
@@ -250,10 +250,10 @@ module Omnibus
 
       cmake_cmd.concat args
       cmake_cmd = cmake_cmd.join(" ").strip
-      command(cmake_cmd, options)
+      command(cmake_cmd, **options)
 
-      make("-j #{workers}", options)
-      make("install", options)
+      make("-j #{workers}", **options)
+      make("install", **options)
     end
     expose :cmake
 
@@ -435,7 +435,7 @@ module Omnibus
         # Ensure the main bin dir exists
         FileUtils.mkdir_p(bin_dir)
 
-        shellout!("#{appbundler_bin} '#{app_software.project_dir}' '#{bin_dir}'", options)
+        shellout!("#{appbundler_bin} '#{app_software.project_dir}' '#{bin_dir}'", **options)
       end
     end
     expose :appbundle
@@ -563,7 +563,7 @@ module Omnibus
     def mkdir(directory, options = {})
       build_commands << BuildCommand.new("mkdir `#{directory}'") do
         Dir.chdir(software.project_dir) do
-          FileUtils.mkdir_p(directory, options)
+          FileUtils.mkdir_p(directory, **options)
         end
       end
     end
@@ -585,7 +585,7 @@ module Omnibus
           parent = File.dirname(file)
           FileUtils.mkdir_p(parent) unless File.directory?(parent)
 
-          FileUtils.touch(file, options)
+          FileUtils.touch(file, **options)
         end
       end
     end
@@ -606,7 +606,7 @@ module Omnibus
       build_commands << BuildCommand.new("delete `#{path}'") do
         Dir.chdir(software.project_dir) do
           FileSyncer.glob(path).each do |file|
-            FileUtils.rm_rf(file, options)
+            FileUtils.rm_rf(file, **options)
           end
         end
       end
@@ -633,7 +633,7 @@ module Omnibus
           raise "no matched files for glob #{command}" if files.empty? && !options[:force]
 
           files.each do |file|
-            FileUtils.cp_r(file, destination, options)
+            FileUtils.cp_r(file, destination, **options)
           end
         end
       end
@@ -660,7 +660,7 @@ module Omnibus
           raise "no matched files for glob #{command}" if files.empty? && !options[:force]
 
           files.each do |file|
-            FileUtils.mv(file, destination, options)
+            FileUtils.mv(file, destination, **options)
           end
         end
       end
