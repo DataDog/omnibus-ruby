@@ -22,12 +22,12 @@ module Omnibus
 
     #
     # Fetch if the local directory checksum is different than the path directory
-    # checksum, or if the force_fetch option is set.
+    # checksum, or if target directory does not exist.
     #
     # @return [true, false]
     #
     def fetch_required?
-      return true if source[:force_fetch]
+      return true unless File.directory?(project_dir)
 
       target_shasum != destination_shasum
     end

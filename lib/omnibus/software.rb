@@ -364,7 +364,7 @@ module Omnibus
           :git, :path, :url, :file, # fetcher types
           :sha256, :sha512, # hash type - common to all fetchers
           :cookie, :warning, :unsafe, :extract, :target_filename, # used by net_fetcher
-          :options, :force_fetch, # used by path_fetcher
+          :options, # used by path_fetcher
           :submodules, :always_fetch_tags # used by git_fetcher
         ]
         unless extra_keys.empty?
