@@ -28,6 +28,7 @@ module Omnibus
     #
     def fetch_required?
       return true if source[:force_fetch]
+
       target_shasum != destination_shasum
     end
 
