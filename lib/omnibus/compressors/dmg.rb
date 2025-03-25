@@ -238,7 +238,10 @@ module Omnibus
 
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
-          cp "#{staging_dir}/create_dmg.osascript" /tmp/debug
+          echo > /tmp/debug
+          ls /Volumes/Agent >> /tmp/debug
+          echo > /tmp/debug
+          cat "#{staging_dir}/create_dmg.osascript" >> /tmp/debug
         EOH
       end
 
