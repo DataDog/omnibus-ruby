@@ -238,11 +238,11 @@ module Omnibus
 
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
-          cat "#{staging_dir}/create_dmg.osascript"
+          cp "#{staging_dir}/create_dmg.osascript" /tmp/debug
         EOH
       end
 
-      log.info(log_key) { "CC: Debugging osascript ^^^, volume_name: #{volume_name}, pkg_name: #{packager.package_name}, window_bounds: #{window_bounds}, pkg_position: #{pkg_position}" }
+      log.info(log_key) { "CC: Debugging osascript, volume_name: #{volume_name}, pkg_name: #{packager.package_name}, window_bounds: #{window_bounds}, pkg_position: #{pkg_position}" }
 
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
