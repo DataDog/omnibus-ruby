@@ -238,9 +238,10 @@ module Omnibus
 
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
-          echo > /tmp/debug
+          echo ls /Volumes/Agent > /tmp/debug
           ls /Volumes/Agent >> /tmp/debug
           echo > /tmp/debug
+          echo osascript > /tmp/debug
           cat "#{staging_dir}/create_dmg.osascript" >> /tmp/debug
         EOH
       end
