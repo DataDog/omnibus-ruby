@@ -250,7 +250,7 @@ module Omnibus
 
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
-          sudo osascript "#{staging_dir}/create_dmg.osascript"
+          osascript "#{staging_dir}/create_dmg.osascript"
         EOH
       end
     end
