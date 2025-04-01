@@ -147,6 +147,9 @@ module Omnibus
           -size 512000k \\
           "#{writable_dmg}" \\
           -puppetstrings
+
+        echo CELIAN DEBUG WRITABLE DMG
+        ls -l "#{writable_dmg}" || true
       EOH
     end
 
@@ -166,10 +169,23 @@ module Omnibus
             -readwrite \\
             -noverify \\
             -noautoopen \\
-            "#{writable_dmg}" | egrep '^/dev/' | sed 1q | awk '{print $1}'
+            "#{writable_dmg}" | tee /tmp/debug | egrep '^/dev/' | sed 1q | awk '{print $1}'
         EOH
 
         cmd.stdout.strip
+      end
+
+      Dir.chdir(staging_dir) do
+        shellout! <<-EOH.gsub(/^ {10}/, "")
+          echo CELIAN DEBUG ATTACH DMG
+          cat /tmp/debug || true
+          ls -l "#{writable_dmg}" || true
+          ls -l "/Volumes" || true
+
+          echo "Device: #{@device}"
+          ls -l "/dev"
+          ls -l "/dev/#{@device}"
+        EOH
       end
     end
 
@@ -239,6 +255,11 @@ module Omnibus
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
           osascript "#{staging_dir}/create_dmg.osascript"
+
+          echo CELIAN DEBUG PRETTIFY DMG
+          ls -l "#{writable_dmg}" || true
+          ls -l /Volumes || true
+          ls -l "/Volumes/#{volume_name}" || true
         EOH
       end
     end
@@ -256,15 +277,21 @@ module Omnibus
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
 
-          echo CELIAN DEBUG
+          echo CELIAN DEBUG COMPRESS DMG
           echo "Writable dmg: #{writable_dmg}"
           ls -l "#{writable_dmg}" || true
           echo "Package path: #{package_path}"
           ls -l "#{package_path}" || true
+          echo "Device: #{@device}"
+          ls -l "/dev"
+          ls -l "/dev/#{@device}"
 
-          chmod -Rf go-w "/Volumes/#{volume_name}"
+          chmod -R go-w "/Volumes/#{volume_name}" || true
           sync
+          echo "Synced"
+          ls -l "/Volumes/#{volume_name}" || true
           hdiutil unmount "#{@device}"
+          ls -l "/Volumes/#{volume_name}" || true
           # Give some time to the system so unmount dmg
           ATTEMPTS=1
           until [ $ATTEMPTS -eq 6 ] || hdiutil detach "#{@device}"; do
