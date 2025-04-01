@@ -70,7 +70,7 @@ module Omnibus
       # Excluding .git directory to avoid errors due to lock files
       before do
         allow(subject).to receive(:digest_directory)
-          .with(source_path, :sha256, exclude: ['.git'])
+          .with(source_path, :sha256, exclude: %w[.git])
           .and_return(shasum)
       end
 
