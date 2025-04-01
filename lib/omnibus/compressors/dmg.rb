@@ -255,6 +255,13 @@ module Omnibus
 
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
+
+          echo CELIAN DEBUG
+          echo "Writable dmg: #{writable_dmg}"
+          ls -l "#{writable_dmg}" || true
+          echo "Package path: #{package_path}"
+          ls -l "#{package_path}" || true
+
           chmod -Rf go-w "/Volumes/#{volume_name}"
           sync
           hdiutil unmount "#{@device}"
