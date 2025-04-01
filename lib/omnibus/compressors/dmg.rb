@@ -183,8 +183,8 @@ module Omnibus
           ls -l "/Volumes" || true
 
           echo "Device: #{@device}"
-          ls -l "/dev"
-          ls -l "/dev/#{@device}"
+          ls -l "/dev" || true
+          ls -l "/dev/#{@device}" || true
         EOH
       end
     end
@@ -283,8 +283,8 @@ module Omnibus
           echo "Package path: #{package_path}"
           ls -l "#{package_path}" || true
           echo "Device: #{@device}"
-          ls -l "/dev"
-          ls -l "/dev/#{@device}"
+          ls -l "/dev" || true
+          ls -l "/dev/#{@device}" || true
 
           chmod -R go-w "/Volumes/#{volume_name}" || true
           sync
