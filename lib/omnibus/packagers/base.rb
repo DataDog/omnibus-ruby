@@ -181,6 +181,8 @@ module Omnibus
       # Ensure the package directory exists
       create_directory(Config.package_dir)
 
+      log.info(log_key) { "Created package directory #{Config.package_dir}" }
+
       measure("Packaging time", ->(duration) { project.store_package_duration(id, duration) }) do
         # Run the setup and build sequences
         instance_eval(&self.class.setup) if self.class.setup

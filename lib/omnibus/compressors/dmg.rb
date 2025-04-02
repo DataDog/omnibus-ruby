@@ -279,6 +279,8 @@ module Omnibus
 
           echo CELIAN DEBUG COMPRESS DMG
 
+          mkdir -p "$(dirname "#{package_path}")"
+
           echo "Writable directory: $(dirname "#{writable_dmg}")"
           ls -l "$(dirname "#{writable_dmg}")" || true
           echo "Package directory: $(dirname "#{package_path}")"
@@ -290,7 +292,7 @@ module Omnibus
           ls -l "#{package_path}" || true
           echo "Device: #{@device}"
           ls -l "/dev" || true
-          ls -l "/dev/#{@device}" || true
+          ls -l "#{@device}" || true
           sleep 5
 
           chmod -R go-w "/Volumes/#{volume_name}" || true
