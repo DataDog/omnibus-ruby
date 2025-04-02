@@ -274,6 +274,9 @@ module Omnibus
     def compress_dmg
       log.info(log_key) { "Compressing dmg" }
 
+      log.info(log_key) { "CELIAN DEBUG Compressing dmg, package_path:#{package_path}" }
+      log.info(log_key) { "CELIAN DEBUG Compressing dmg, writable_dmg:#{writable_dmg}" }
+
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
 
