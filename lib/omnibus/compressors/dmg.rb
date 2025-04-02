@@ -279,7 +279,7 @@ module Omnibus
 
           echo CELIAN DEBUG COMPRESS DMG
 
-          mkdir -p "$(dirname "#{package_path}")"
+          # mkdir -p "$(dirname "#{package_path}")"
 
           echo "Writable directory: $(dirname "#{writable_dmg}")"
           ls -l "$(dirname "#{writable_dmg}")" || true
