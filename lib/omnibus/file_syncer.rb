@@ -123,6 +123,8 @@ module Omnibus
           "the `copy' method instead."
       end
 
+      # Excluding .git directory to avoid errors due to lock / temporary files
+      options = options.merge(exclude: %w[.git])
       source_files = all_files_under(source, options)
 
       # Ensure the destination directory exists

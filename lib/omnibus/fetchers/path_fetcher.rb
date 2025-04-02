@@ -66,8 +66,7 @@ module Omnibus
 
       @@source_path_mutexes[source_path].synchronize {
         create_required_directories
-        # Excluding .git directory to avoid errors due to lock files
-        FileSyncer.sync(source_path, project_dir, source_options.merge(exclude: %w[.git]))
+        FileSyncer.sync(source_path, project_dir, source_options)
         # Reset target shasum on every fetch
         @target_shasum = nil
       }
