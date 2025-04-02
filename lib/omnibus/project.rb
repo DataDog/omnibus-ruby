@@ -1550,8 +1550,10 @@ module Omnibus
 
       # Create the destination directory
       unless File.directory?(destination)
+        log.info(log_key) { "Creating destination directory #{destination}" }
         FileUtils.mkdir_p(destination)
       end
+      log.info(log_key) { "Destination directory #{destination} should exist" }
 
       # Evaluate any compressor-specific blocks, in order.
       compressors[compressor.id].each do |block|

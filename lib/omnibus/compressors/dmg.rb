@@ -278,6 +278,12 @@ module Omnibus
         shellout! <<-EOH.gsub(/^ {10}/, "")
 
           echo CELIAN DEBUG COMPRESS DMG
+
+          echo "Writable directory: $(dirname "#{writable_dmg}")"
+          ls -l "$(dirname "#{writable_dmg}")" || true
+          echo "Package directory: $(dirname "#{package_path}")"
+          ls -l "$(dirname "#{package_path}")" || true
+          echo
           echo "Writable dmg: #{writable_dmg}"
           ls -l "#{writable_dmg}" || true
           echo "Package path: #{package_path}"
@@ -285,6 +291,7 @@ module Omnibus
           echo "Device: #{@device}"
           ls -l "/dev" || true
           ls -l "/dev/#{@device}" || true
+          sleep 5
 
           chmod -R go-w "/Volumes/#{volume_name}" || true
           sync
