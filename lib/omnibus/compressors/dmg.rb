@@ -277,28 +277,27 @@ module Omnibus
       log.info(log_key) { "CELIAN DEBUG Compressing dmg, package_path:#{package_path}" }
       log.info(log_key) { "CELIAN DEBUG Compressing dmg, writable_dmg:#{writable_dmg}" }
 
-      target_package_path = File.expand_path(package_path)
-
       Dir.chdir(staging_dir) do
         log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging package_path:#{package_path}" }
+        log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging writable_dmg:#{writable_dmg}" }
+        log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging package_name:#{package_name}" }
+        log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging Config.package_dir:#{Config.package_dir}" }
 
         shellout! <<-EOH.gsub(/^ {10}/, "")
 
-          # Using target_package_path (#{target_package_path}) instead of package_path (#{package_path})
-
           echo CELIAN DEBUG COMPRESS DMG
 
-          # mkdir -p "$(dirname "#{target_package_path}")"
+          # mkdir -p "$(dirname "#{package_path}")"
 
           echo "Writable directory: $(dirname "#{writable_dmg}")"
           ls -l "$(dirname "#{writable_dmg}")" || true
-          echo "Package directory: $(dirname "#{target_package_path}")"
-          ls -l "$(dirname "#{target_package_path}")" || true
+          echo "Package directory: $(dirname "#{package_path}")"
+          ls -l "$(dirname "#{package_path}")" || true
           echo
           echo "Writable dmg: #{writable_dmg}"
           ls -l "#{writable_dmg}" || true
-          echo "Package path: #{target_package_path}"
-          ls -l "#{target_package_path}" || true
+          echo "Package path: #{package_path}"
+          ls -l "#{package_path}" || true
           # echo "Device: #{@device}"
           # ls -l "/dev" || true
           # ls -l "#{@device}" || true
@@ -321,7 +320,7 @@ module Omnibus
             -format UDZO \\
             -imagekey \\
             zlib-level=9 \\
-            -o "#{target_package_path}" \\
+            -o "#{package_path}" \\
             -puppetstrings
         EOH
       end
