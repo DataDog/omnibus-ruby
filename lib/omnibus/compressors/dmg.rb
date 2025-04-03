@@ -274,17 +274,8 @@ module Omnibus
     def compress_dmg
       log.info(log_key) { "Compressing dmg" }
 
-      log.info(log_key) { "CELIAN DEBUG Compressing dmg, package_path:#{package_path}" }
-      log.info(log_key) { "CELIAN DEBUG Compressing dmg, writable_dmg:#{writable_dmg}" }
-
-      target_package_path = package_path
-
       Dir.chdir(staging_dir) do
-        log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging TARGET package_path:#{target_package_path}" }
-        log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging package_path:#{package_path}" }
-        log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging writable_dmg:#{writable_dmg}" }
-        log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging package_name:#{package_name}" }
-        log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging Config.package_dir:#{Config.package_dir}" }
+        target_package_path = package_path
 
         shellout! <<-EOH.gsub(/^ {10}/, "")
           echo CELIAN DEBUG COMPRESS DMG
@@ -336,9 +327,9 @@ module Omnibus
     def verify_dmg
       log.info(log_key) { "Verifying dmg" }
 
-      target_package_path = package_path
-
       Dir.chdir(staging_dir) do
+        target_package_path = package_path
+
         shellout! <<-EOH.gsub(/^ {10}/, "")
           hdiutil verify \\
             "#{target_package_path}" \\
@@ -370,9 +361,9 @@ module Omnibus
     def set_dmg_icon
       log.info(log_key) { "Setting dmg icon" }
 
-      target_package_path = package_path
-
       Dir.chdir(staging_dir) do
+        target_package_path = package_path
+
         shellout! <<-EOH.gsub(/^ {10}/, "")
           # Convert the png to an icon
           sips -i "#{resource_path('icon.png')}"
