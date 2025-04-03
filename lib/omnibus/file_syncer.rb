@@ -69,7 +69,8 @@ module Omnibus
       source_files = glob(File.join(source, "**/*"))
       source_files = source_files.reject do |source_file|
         basename = relative_path_for(source_file, source)
-        excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH | File::FNM_PATHNAME) }
+        # Excluding .git file to avoid errors due to lock / temporary files
+        excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH | File::FNM_PATHNAME) } || basename.include?('.git')
       end
 
       if not includes.empty?
@@ -123,8 +124,6 @@ module Omnibus
           "the `copy' method instead."
       end
 
-      # Excluding .git directory to avoid errors due to lock / temporary files
-      options = options.merge(exclude: %w[.git])
       source_files = all_files_under(source, options)
 
       # Ensure the destination directory exists
