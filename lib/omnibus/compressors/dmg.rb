@@ -277,38 +277,40 @@ module Omnibus
       log.info(log_key) { "CELIAN DEBUG Compressing dmg, package_path:#{package_path}" }
       log.info(log_key) { "CELIAN DEBUG Compressing dmg, writable_dmg:#{writable_dmg}" }
 
+      target_package_path = package_path
+
       Dir.chdir(staging_dir) do
+        log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging TARGET package_path:#{target_package_path}" }
         log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging package_path:#{package_path}" }
         log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging writable_dmg:#{writable_dmg}" }
         log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging package_name:#{package_name}" }
         log.info(log_key) { "CELIAN DEBUG Compressing dmg, staging Config.package_dir:#{Config.package_dir}" }
 
         shellout! <<-EOH.gsub(/^ {10}/, "")
-
           echo CELIAN DEBUG COMPRESS DMG
 
-          # mkdir -p "$(dirname "#{package_path}")"
+          echo Creating dir "$(dirname "#{target_package_path}")"
+          mkdir -p "$(dirname "#{target_package_path}")"
 
           echo "Writable directory: $(dirname "#{writable_dmg}")"
           ls -l "$(dirname "#{writable_dmg}")" || true
-          echo "Package directory: $(dirname "#{package_path}")"
-          ls -l "$(dirname "#{package_path}")" || true
+          echo "Package directory: $(dirname "#{target_package_path}")"
+          ls -l "$(dirname "#{target_package_path}")" || true
           echo
           echo "Writable dmg: #{writable_dmg}"
           ls -l "#{writable_dmg}" || true
-          echo "Package path: #{package_path}"
-          ls -l "#{package_path}" || true
+          echo "Package path: #{target_package_path}"
+          ls -l "#{target_package_path}" || true
           # echo "Device: #{@device}"
           # ls -l "/dev" || true
           # ls -l "#{@device}" || true
-          sleep 5
+          # sleep 5
 
           chmod -R go-w "/Volumes/#{volume_name}" || true
           sync
           echo "Synced"
           ls -l "/Volumes/#{volume_name}" || true
           hdiutil unmount "#{@device}"
-          ls -l "/Volumes/#{volume_name}" || true
           # Give some time to the system so unmount dmg
           ATTEMPTS=1
           until [ $ATTEMPTS -eq 6 ] || hdiutil detach "#{@device}"; do
@@ -320,7 +322,7 @@ module Omnibus
             -format UDZO \\
             -imagekey \\
             zlib-level=9 \\
-            -o "#{package_path}" \\
+            -o "#{target_package_path}" \\
             -puppetstrings
         EOH
       end
