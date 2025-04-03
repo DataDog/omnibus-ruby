@@ -336,10 +336,12 @@ module Omnibus
     def verify_dmg
       log.info(log_key) { "Verifying dmg" }
 
+      target_package_path = package_path
+
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
           hdiutil verify \\
-            "#{package_path}" \\
+            "#{target_package_path}" \\
             -puppetstrings
         EOH
       end
@@ -368,6 +370,8 @@ module Omnibus
     def set_dmg_icon
       log.info(log_key) { "Setting dmg icon" }
 
+      target_package_path = package_path
+
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
           # Convert the png to an icon
@@ -377,10 +381,10 @@ module Omnibus
           DeRez -only icns "#{resource_path('icon.png')}" > tmp.rsrc
 
           # Append the icon reosurce to the DMG
-          Rez -append tmp.rsrc -o "#{package_path}"
+          Rez -append tmp.rsrc -o "#{target_package_path}"
 
           # Source the icon
-          SetFile -a C "#{package_path}"
+          SetFile -a C "#{target_package_path}"
         EOH
       end
     end
