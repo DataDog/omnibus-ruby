@@ -147,9 +147,6 @@ module Omnibus
           -size 512000k \\
           "#{writable_dmg}" \\
           -puppetstrings
-
-        echo CELIAN DEBUG WRITABLE DMG
-        ls -l "#{writable_dmg}" || true
       EOH
     end
 
@@ -169,23 +166,10 @@ module Omnibus
             -readwrite \\
             -noverify \\
             -noautoopen \\
-            "#{writable_dmg}" | tee /tmp/debug | egrep '^/dev/' | sed 1q | awk '{print $1}'
+            "#{writable_dmg}" | egrep '^/dev/' | sed 1q | awk '{print $1}'
         EOH
 
         cmd.stdout.strip
-      end
-
-      Dir.chdir(staging_dir) do
-        shellout! <<-EOH.gsub(/^ {10}/, "")
-          echo CELIAN DEBUG ATTACH DMG
-          cat /tmp/debug || true
-          ls -l "#{writable_dmg}" || true
-          ls -l "/Volumes" || true
-
-          echo "Device: #{@device}"
-          ls -l "/dev" || true
-          ls -l "/dev/#{@device}" || true
-        EOH
       end
     end
 
@@ -255,11 +239,6 @@ module Omnibus
       Dir.chdir(staging_dir) do
         shellout! <<-EOH.gsub(/^ {10}/, "")
           osascript "#{staging_dir}/create_dmg.osascript"
-
-          echo CELIAN DEBUG PRETTIFY DMG
-          ls -l "#{writable_dmg}" || true
-          ls -l /Volumes || true
-          ls -l "/Volumes/#{volume_name}" || true
         EOH
       end
     end
@@ -275,32 +254,9 @@ module Omnibus
       log.info(log_key) { "Compressing dmg" }
 
       Dir.chdir(staging_dir) do
-        target_package_path = package_path
-
         shellout! <<-EOH.gsub(/^ {10}/, "")
-          echo CELIAN DEBUG COMPRESS DMG
-
-          echo Creating dir "$(dirname "#{target_package_path}")"
-          mkdir -p "$(dirname "#{target_package_path}")"
-
-          echo "Writable directory: $(dirname "#{writable_dmg}")"
-          ls -l "$(dirname "#{writable_dmg}")" || true
-          echo "Package directory: $(dirname "#{target_package_path}")"
-          ls -l "$(dirname "#{target_package_path}")" || true
-          echo
-          echo "Writable dmg: #{writable_dmg}"
-          ls -l "#{writable_dmg}" || true
-          echo "Package path: #{target_package_path}"
-          ls -l "#{target_package_path}" || true
-          # echo "Device: #{@device}"
-          # ls -l "/dev" || true
-          # ls -l "#{@device}" || true
-          # sleep 5
-
-          chmod -R go-w "/Volumes/#{volume_name}" || true
+          chmod -Rf go-w "/Volumes/#{volume_name}"
           sync
-          echo "Synced"
-          ls -l "/Volumes/#{volume_name}" || true
           hdiutil unmount "#{@device}"
           # Give some time to the system so unmount dmg
           ATTEMPTS=1
@@ -313,7 +269,7 @@ module Omnibus
             -format UDZO \\
             -imagekey \\
             zlib-level=9 \\
-            -o "#{target_package_path}" \\
+            -o "#{package_path}" \\
             -puppetstrings
         EOH
       end
@@ -328,11 +284,9 @@ module Omnibus
       log.info(log_key) { "Verifying dmg" }
 
       Dir.chdir(staging_dir) do
-        target_package_path = package_path
-
         shellout! <<-EOH.gsub(/^ {10}/, "")
           hdiutil verify \\
-            "#{target_package_path}" \\
+            "#{package_path}" \\
             -puppetstrings
         EOH
       end
@@ -362,8 +316,6 @@ module Omnibus
       log.info(log_key) { "Setting dmg icon" }
 
       Dir.chdir(staging_dir) do
-        target_package_path = package_path
-
         shellout! <<-EOH.gsub(/^ {10}/, "")
           # Convert the png to an icon
           sips -i "#{resource_path('icon.png')}"
@@ -372,10 +324,10 @@ module Omnibus
           DeRez -only icns "#{resource_path('icon.png')}" > tmp.rsrc
 
           # Append the icon reosurce to the DMG
-          Rez -append tmp.rsrc -o "#{target_package_path}"
+          Rez -append tmp.rsrc -o "#{package_path}"
 
           # Source the icon
-          SetFile -a C "#{target_package_path}"
+          SetFile -a C "#{package_path}"
         EOH
       end
     end

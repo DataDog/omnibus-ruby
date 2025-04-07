@@ -9,7 +9,9 @@ tell application "Finder"
     set arrangement of theViewOptions to not arranged
     set icon size of theViewOptions to 72
     set background picture of theViewOptions to file ".support:background.png"
+    delay 5
     set position of item "<%= pkg_name %>" of container window to {<%= pkg_position %>}
     update without registering applications
+    delay 5
   end tell
 end tell
