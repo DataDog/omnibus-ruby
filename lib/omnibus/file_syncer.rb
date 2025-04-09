@@ -69,8 +69,10 @@ module Omnibus
       source_files = glob(File.join(source, "**/*"))
       source_files = source_files.reject do |source_file|
         basename = relative_path_for(source_file, source)
-        # Excluding .git file to avoid errors due to lock / temporary files
-        excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH | File::FNM_PATHNAME) } || basename.include?('.git')
+        # TODO A: Uncomment?
+        # # Excluding .git file to avoid errors due to lock / temporary files
+        # excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH | File::FNM_PATHNAME) } || basename.include?('.git')
+        excludes.any? { |exclude| File.fnmatch?(exclude, basename, File::FNM_DOTMATCH | File::FNM_PATHNAME) }
       end
 
       if not includes.empty?
