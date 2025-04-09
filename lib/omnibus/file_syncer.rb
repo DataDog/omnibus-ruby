@@ -276,11 +276,11 @@ module Omnibus
     # being removed between file syncing operations
     #
     def wait_git_operations()
-      log.info(log_key) { "CELIAN Waiting for temporary files" }
+      puts "CELIAN Waiting for temporary files"
 
       # For each index.lock file, wait for it to be removed
       Dir.glob("**/.git/index.lock").each do |file|
-        log.info(log_key) { "CELIAN Found `#{file}' temporary file" }
+        puts "CELIAN Found `#{file}' temporary file"
         # Wait for the lock file to be removed
         while File.exist?(file)
           sleep 0.05
