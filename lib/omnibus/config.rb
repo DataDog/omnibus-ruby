@@ -127,6 +127,10 @@ module Omnibus
       File.join(base_dir, "cache", "git_cache")
     end
 
+    default(:discard_dir) do
+      File.join(base_dir, "discard")
+    end
+
     # The absolute path to the directory on the virtual machine where
     # source code will be downloaded.
     #
