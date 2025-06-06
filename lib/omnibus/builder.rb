@@ -225,7 +225,7 @@ module Omnibus
         # We can't generate a temporary directory here since it would cause
         # the command line to change during each build, which causes the
         # git cache tag to change for each build, rendering it useless
-        man_dir = Config.discard_dir
+        man_dir = Config.man_dir
         FileUtils.mkdir_p(man_dir)
         configure_cmd << "--mandir=#{man_dir}"
       end

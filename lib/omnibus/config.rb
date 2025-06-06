@@ -131,6 +131,10 @@ module Omnibus
       File.join(base_dir, "discard")
     end
 
+    default(:man_dir) do
+      File.join(discard_dir, "man")
+    end
+
     # The absolute path to the directory on the virtual machine where
     # source code will be downloaded.
     #
