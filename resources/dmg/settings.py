@@ -1,5 +1,12 @@
 from os.path import basename as _basename
 
+
+def _to_rect(bounds):
+    """See the TIP section of: https://www.macosxautomation.com/applescript/firsttutorial/11.html"""
+    bounds = [int(s) for s in bounds.split(",")]
+    return [bounds[:2], [bounds[2] - bounds[0], bounds[3] - bounds[1]]]
+
+
 # Settings reference: https://dmgbuild.readthedocs.io/en/latest/settings.html
 # Sample w/ defaults: https://dmgbuild.readthedocs.io/en/latest/example.html
 
@@ -19,7 +26,7 @@ show_toolbar = False
 # set statusbar visible of container window to false
 show_status_bar = False
 # set the bounds of container window to {<%= window_bounds %>}
-window_rect = [[int(s) for s in defines["window_bounds"].split(",")][i:i + 2] for i in (0, 2)]
+window_rect = _to_rect(defines["window_bounds"])
 # set theViewOptions to the icon view options of container window
 include_icon_view_settings = True
 # set arrangement of theViewOptions to not arranged
