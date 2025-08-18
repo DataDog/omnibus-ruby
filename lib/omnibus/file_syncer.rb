@@ -123,14 +123,20 @@ module Omnibus
           "the `copy' method instead."
       end
 
+      wait_git_operations(1)
+
       source_files = all_files_under(source, options)
 
       # Ensure the destination directory exists
       create_sync_dir(source, destination)
 
+      wait_git_operations(2)
+
       # Clear any hardlink that we might have seen while syncing a previous directory
       # This can happen when generating 2 different packages in a row
       hardlink_sources.clear
+
+      wait_git_operations(3)
 
       # Copy over the filtered source files
       source_files.each do |source_file|
@@ -260,6 +266,23 @@ module Omnibus
       else
         if File.stat(source).mode != File.stat(destination).mode
           File.chmod(File.stat(source).mode, destination)
+        end
+      end
+    end
+
+    #
+    # Wait for any git operation to finish and avoid temporary files
+    # being removed between file syncing operations
+    #
+    def wait_git_operations(id)
+      puts "CELIAN Waiting for temporary files #{id}"
+
+      # For each index.lock file, wait for it to be removed
+      Dir.glob("**/.git/index.lock").each do |file|
+        puts "CELIAN Found `#{file}' temporary file"
+        # Wait for the lock file to be removed
+        while File.exist?(file)
+          sleep 0.05
         end
       end
     end
