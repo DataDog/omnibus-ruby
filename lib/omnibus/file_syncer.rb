@@ -127,7 +127,7 @@ module Omnibus
     def sync(source, destination, options = {})
       start_time = Time.now
       log.info(log_key) { "Starting sync from '#{source}' to '#{destination}'" }
-      
+
       unless File.directory?(source)
         raise ArgumentError, "`source' must be a directory, but was a " \
           "`#{File.ftype(source)}'! If you just want to sync a file, use " \
@@ -176,62 +176,81 @@ module Omnibus
       end
       log.info(log_key) { "Created #{dir_mode_map.size} directories in #{Time.now - phase_start}s" }
 
-      # Phase 4: Copy files
+      # Phase 4: Copy files (parallelized)
       phase_start = Time.now
-      file_count = 0
-      symlink_count = 0
-      hardlink_count = 0
-      
-      # Copy over the filtered source files
-      source_files.each do |source_file|
-        relative_path = relative_path_for(source_file, source)
 
+      # Categorize files for processing
+      regular_files = []
+      symlinks = []
+      hardlinks = []
+
+      source_files.each do |source_file|
         case File.ftype(source_file).to_sym
         when :directory
-          # This is a directory, so we don't need to do anything because
-          # we created all the needed directories with the right permissions ahead of time
+          # Skip - already created
         when :link
-          target = File.readlink(source_file)
-
-          Dir.chdir(destination) do
-            FileUtils.ln_sf(target, "#{destination}/#{relative_path}")
-          end
-          symlink_count += 1
+          symlinks << source_file
         when :file
           source_stat = File.stat(source_file)
-          # Detect 'files' which are hard links and use ln instead of cp to
-          # duplicate them, provided their source is in place already
-          if hardlink? source_stat
-            if existing = hardlink_sources[[source_stat.dev, source_stat.ino]]
-              FileUtils.ln(existing, "#{destination}/#{relative_path}", force: true)
-            else
-              begin
-                FileUtils.cp(source_file, "#{destination}/#{relative_path}")
-              rescue Errno::EACCES
-                FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
-              end
-              hardlink_sources.store([source_stat.dev, source_stat.ino], "#{destination}/#{relative_path}")
-            end
-            hardlink_count += 1
+          if hardlink?(source_stat)
+            hardlinks << [source_file, source_stat]
           else
-            # First attempt a regular copy. If we don't have write
-            # permission on the File, open will probably fail with
-            # EACCES (making it hard to sync files with permission
-            # r--r--r--). Rescue this error and use cp_r's
-            # :remove_destination option.
-            begin
-              FileUtils.cp(source_file, "#{destination}/#{relative_path}")
-            rescue Errno::EACCES
-              FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
-            end
-            file_count += 1
+            regular_files << source_file
           end
         else
           raise RuntimeError,
                 "Unknown file type: `File.ftype(source_file)' at `#{source_file}'!"
         end
       end
-      log.info(log_key) { "Copied #{file_count} files, #{hardlink_count} hardlinks, #{symlink_count} symlinks in #{Time.now - phase_start}s" }
+
+      log.info(log_key) { "Categorized #{regular_files.size} regular files, #{hardlinks.size} hardlinks, #{symlinks.size} symlinks" }
+
+      # Process regular files in parallel (the main bottleneck)
+      require "omnibus/thread_pool"
+      thread_count = [8, regular_files.size].min  # Use up to 8 threads
+
+      if regular_files.any?
+        copy_start = Time.now
+        ThreadPool.new(thread_count) do |pool|
+          regular_files.each do |source_file|
+            pool.schedule do
+              relative_path = relative_path_for(source_file, source)
+              begin
+                FileUtils.cp(source_file, "#{destination}/#{relative_path}")
+              rescue Errno::EACCES
+                FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
+              end
+            end
+          end
+        end
+        log.info(log_key) { "Copied #{regular_files.size} regular files in parallel (#{thread_count} threads) in #{Time.now - copy_start}s" }
+      end
+
+      # Process symlinks serially (usually few of them)
+      symlinks.each do |source_file|
+        relative_path = relative_path_for(source_file, source)
+        target = File.readlink(source_file)
+        Dir.chdir(destination) do
+          FileUtils.ln_sf(target, "#{destination}/#{relative_path}")
+        end
+      end
+
+      # Process hardlinks serially (need to maintain hardlink relationships)
+      hardlinks.each do |source_file, source_stat|
+        relative_path = relative_path_for(source_file, source)
+        if existing = hardlink_sources[[source_stat.dev, source_stat.ino]]
+          FileUtils.ln(existing, "#{destination}/#{relative_path}", force: true)
+        else
+          begin
+            FileUtils.cp(source_file, "#{destination}/#{relative_path}")
+          rescue Errno::EACCES
+            FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
+          end
+          hardlink_sources.store([source_stat.dev, source_stat.ino], "#{destination}/#{relative_path}")
+        end
+      end
+
+      log.info(log_key) { "Total copied: #{regular_files.size} files, #{hardlinks.size} hardlinks, #{symlinks.size} symlinks in #{Time.now - phase_start}s" }
 
       # Phase 5: Cleanup extra files
       phase_start = Time.now
