@@ -20,6 +20,14 @@ module Omnibus
   module FileSyncer
     extend self
 
+    def log
+      Omnibus.logger
+    end
+
+    def log_key
+      "FileSyncer"
+    end
+
     # Files to be ignored during a directory globbing
     IGNORED_FILES = %w{. ..}.freeze
 
@@ -117,18 +125,26 @@ module Omnibus
     # @return [true]
     #
     def sync(source, destination, options = {})
+      start_time = Time.now
+      log.info(log_key) { "Starting sync from '#{source}' to '#{destination}'" }
+      
       unless File.directory?(source)
         raise ArgumentError, "`source' must be a directory, but was a " \
           "`#{File.ftype(source)}'! If you just want to sync a file, use " \
           "the `copy' method instead."
       end
 
+      # Phase 1: Collect source files
+      phase_start = Time.now
       source_files = all_files_under(source, options)
+      log.info(log_key) { "Collected #{source_files.size} source files in #{Time.now - phase_start}s" }
 
       # Clear any hardlink that we might have seen while syncing a previous directory
       # This can happen when generating 2 different packages in a row
       hardlink_sources.clear
 
+      # Phase 2: Build directory map
+      phase_start = Time.now
       # Create all the needed directories in the destination with the right permissions
       # First gather all the directories and their permissions
       dir_mode_map = {}
@@ -150,12 +166,22 @@ module Omnibus
           dir_mode_map[dest_dir] = File.stat(src_dir).mode
         end
       end
+      log.info(log_key) { "Built directory map with #{dir_mode_map.size} directories in #{Time.now - phase_start}s" }
 
+      # Phase 3: Create directories
+      phase_start = Time.now
       # Then create all the directories
       dir_mode_map.each do |dest_dir, mode|
         FileUtils.mkdir_p(dest_dir, :mode => mode)
       end
+      log.info(log_key) { "Created #{dir_mode_map.size} directories in #{Time.now - phase_start}s" }
 
+      # Phase 4: Copy files
+      phase_start = Time.now
+      file_count = 0
+      symlink_count = 0
+      hardlink_count = 0
+      
       # Copy over the filtered source files
       source_files.each do |source_file|
         relative_path = relative_path_for(source_file, source)
@@ -170,6 +196,7 @@ module Omnibus
           Dir.chdir(destination) do
             FileUtils.ln_sf(target, "#{destination}/#{relative_path}")
           end
+          symlink_count += 1
         when :file
           source_stat = File.stat(source_file)
           # Detect 'files' which are hard links and use ln instead of cp to
@@ -185,6 +212,7 @@ module Omnibus
               end
               hardlink_sources.store([source_stat.dev, source_stat.ino], "#{destination}/#{relative_path}")
             end
+            hardlink_count += 1
           else
             # First attempt a regular copy. If we don't have write
             # permission on the File, open will probably fail with
@@ -196,13 +224,17 @@ module Omnibus
             rescue Errno::EACCES
               FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
             end
+            file_count += 1
           end
         else
           raise RuntimeError,
                 "Unknown file type: `File.ftype(source_file)' at `#{source_file}'!"
         end
       end
+      log.info(log_key) { "Copied #{file_count} files, #{hardlink_count} hardlinks, #{symlink_count} symlinks in #{Time.now - phase_start}s" }
 
+      # Phase 5: Cleanup extra files
+      phase_start = Time.now
       # Remove any files in the destination that are not in the source files
       destination_files = glob("#{destination}/**/*")
 
@@ -221,7 +253,9 @@ module Omnibus
       extra_files.each do |file|
         FileUtils.rm_rf(File.join(destination, file))
       end
+      log.info(log_key) { "Removed #{extra_files.size} extra files in #{Time.now - phase_start}s" }
 
+      log.info(log_key) { "Sync completed in #{Time.now - start_time}s total" }
       true
     end
 
