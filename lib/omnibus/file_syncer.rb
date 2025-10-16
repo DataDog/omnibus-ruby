@@ -125,25 +125,45 @@ module Omnibus
 
       source_files = all_files_under(source, options)
 
-      # Ensure the destination directory exists
-      create_sync_dir(source, destination)
-
       # Clear any hardlink that we might have seen while syncing a previous directory
       # This can happen when generating 2 different packages in a row
       hardlink_sources.clear
+
+      # Create all the needed directories in the destination with the right permissions
+      # First gather all the directories and their permissions
+      dir_mode_map = {}
+      dir_mode_map[destination] = File.stat(source).mode
+      source_files.each do |source_file|
+        relative_path = relative_path_for(source_file, source)
+        # Add source itself if it's a directory
+        if File.directory?(source_file)
+          dest_target = File.join(destination, relative_path)
+          unless dir_mode_map.key?(dest_target)
+            dir_mode_map[dest_target] = File.stat(source_file).mode
+          end
+        end
+        # Add parent
+        dirname = File.dirname(relative_path)
+        dest_dir = File.join(destination, dirname)
+        unless dir_mode_map.key?(dest_dir)
+          src_dir = File.join(source, dirname)
+          dir_mode_map[dest_dir] = File.stat(src_dir).mode
+        end
+      end
+
+      # Then create all the directories
+      dir_mode_map.each do |dest_dir, mode|
+        FileUtils.mkdir_p(dest_dir, :mode => mode)
+      end
 
       # Copy over the filtered source files
       source_files.each do |source_file|
         relative_path = relative_path_for(source_file, source)
 
-        # Create the parent directory
-        dirname = File.dirname(relative_path)
-        parent = File.join(destination, dirname)
-        create_sync_dir(File.join(source, dirname), parent)
-
         case File.ftype(source_file).to_sym
         when :directory
-          create_sync_dir(File.join(source, relative_path), File.join(destination, relative_path))
+          # This is a directory, so we don't need to do anything because
+          # we created all the needed directories with the right permissions ahead of time
         when :link
           target = File.readlink(source_file)
 
@@ -247,20 +267,6 @@ module Omnibus
         stat.nlink > 1
       else
         false
-      end
-    end
-
-    #
-    # Create a "destination" directory with the same name and permissions
-    # as the source directory
-    #
-    def create_sync_dir(source, destination)
-      if not File.directory?(destination)
-        FileUtils.mkdir_p(destination, :mode => File.stat(source).mode)
-      else
-        if File.stat(source).mode != File.stat(destination).mode
-          File.chmod(File.stat(source).mode, destination)
-        end
       end
     end
   end
