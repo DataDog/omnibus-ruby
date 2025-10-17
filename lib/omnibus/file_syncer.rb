@@ -152,7 +152,7 @@ module Omnibus
       source_files.each do |source_file|
         relative_path = relative_path_for(source_file, source)
         # Add source itself if it's a directory
-        if File.directory?(source_file)
+        if File.ftype(source_file) == "directory"
           dest_target = File.join(destination, relative_path)
           unless dir_mode_map.key?(dest_target)
             dir_mode_map[dest_target] = File.stat(source_file).mode
