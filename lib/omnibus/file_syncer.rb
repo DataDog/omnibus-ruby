@@ -134,7 +134,7 @@ module Omnibus
           "the `copy' method instead."
       end
 
-      # Phase 1: Collect source files
+      # Collect source files
       phase_start = Time.now
       source_files = all_files_under(source, options)
       log.info(log_key) { "Collected #{source_files.size} source files in #{Time.now - phase_start}s" }
@@ -143,7 +143,7 @@ module Omnibus
       # This can happen when generating 2 different packages in a row
       hardlink_sources.clear
 
-      # Phase 2: Build directory map
+      # Build directory map
       phase_start = Time.now
       # Create all the needed directories in the destination with the right permissions
       # First gather all the directories and their permissions
@@ -168,15 +168,15 @@ module Omnibus
       end
       log.info(log_key) { "Built directory map with #{dir_mode_map.size} directories in #{Time.now - phase_start}s" }
 
-      # Phase 3: Create directories
+      # Create directories
       phase_start = Time.now
-      # Then create all the directories
-      dir_mode_map.each do |dest_dir, mode|
+      # Create directories sorted by depth (shallowest first) to ensure correct permissions
+      dir_mode_map.sort_by { |path, _| path.count(File::SEPARATOR) }.each do |dest_dir, mode|
         FileUtils.mkdir_p(dest_dir, :mode => mode)
       end
       log.info(log_key) { "Created #{dir_mode_map.size} directories in #{Time.now - phase_start}s" }
 
-      # Phase 4: Copy files (parallelized)
+      # Copy files and symlinks
       phase_start = Time.now
 
       # Categorize files for processing
@@ -205,11 +205,12 @@ module Omnibus
 
       log.info(log_key) { "Categorized #{regular_files.size} regular files, #{hardlinks.size} hardlinks, #{symlinks.size} symlinks" }
 
-      # Process regular files in parallel (the main bottleneck)
+      # Process regular files and symlinks in parallel
       require "omnibus/thread_pool"
-      thread_count = [8, regular_files.size].min  # Use up to 8 threads
+      parallel_items = regular_files + symlinks
+      thread_count = [8, parallel_items.size].min  # Use up to 8 threads
 
-      if regular_files.any?
+      if parallel_items.any?
         copy_start = Time.now
         ThreadPool.new(thread_count) do |pool|
           regular_files.each do |source_file|
@@ -222,37 +223,38 @@ module Omnibus
               end
             end
           end
-        end
-        log.info(log_key) { "Copied #{regular_files.size} regular files in parallel (#{thread_count} threads) in #{Time.now - copy_start}s" }
-      end
 
-      # Process symlinks serially (usually few of them)
-      symlinks.each do |source_file|
-        relative_path = relative_path_for(source_file, source)
-        target = File.readlink(source_file)
-        Dir.chdir(destination) do
-          FileUtils.ln_sf(target, "#{destination}/#{relative_path}")
-        end
-      end
-
-      # Process hardlinks serially (need to maintain hardlink relationships)
-      hardlinks.each do |source_file, source_stat|
-        relative_path = relative_path_for(source_file, source)
-        if existing = hardlink_sources[[source_stat.dev, source_stat.ino]]
-          FileUtils.ln(existing, "#{destination}/#{relative_path}", force: true)
-        else
-          begin
-            FileUtils.cp(source_file, "#{destination}/#{relative_path}")
-          rescue Errno::EACCES
-            FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
+          symlinks.each do |source_file|
+            pool.schedule do
+              relative_path = relative_path_for(source_file, source)
+              target = File.readlink(source_file)
+              FileUtils.ln_sf(target, "#{destination}/#{relative_path}")
+            end
           end
-          hardlink_sources.store([source_stat.dev, source_stat.ino], "#{destination}/#{relative_path}")
+        end
+        log.info(log_key) { "Copied #{regular_files.size} files and #{symlinks.size} symlinks in parallel (#{thread_count} threads) in #{Time.now - copy_start}s" }
+      end
+
+      # Process hardlinks serially (to maintain hardlink relationships)
+      if hardlinks.any?
+        hardlinks.each do |source_file, source_stat|
+          relative_path = relative_path_for(source_file, source)
+          if existing = hardlink_sources[[source_stat.dev, source_stat.ino]]
+            FileUtils.ln(existing, "#{destination}/#{relative_path}", force: true)
+          else
+            begin
+              FileUtils.cp(source_file, "#{destination}/#{relative_path}")
+            rescue Errno::EACCES
+              FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
+            end
+            hardlink_sources.store([source_stat.dev, source_stat.ino], "#{destination}/#{relative_path}")
+          end
         end
       end
 
-      log.info(log_key) { "Total copied: #{regular_files.size} files, #{hardlinks.size} hardlinks, #{symlinks.size} symlinks in #{Time.now - phase_start}s" }
+      log.info(log_key) { "Copied #{regular_files.size} files, #{hardlinks.size} hardlinks, #{symlinks.size} symlinks in #{Time.now - phase_start}s" }
 
-      # Phase 5: Cleanup extra files
+      # Cleanup extra files
       phase_start = Time.now
       # Remove any files in the destination that are not in the source files
       destination_files = glob("#{destination}/**/*")
