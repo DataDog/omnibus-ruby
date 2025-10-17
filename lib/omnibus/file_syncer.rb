@@ -15,18 +15,11 @@
 #
 
 require "fileutils" unless defined?(FileUtils)
+require "omnibus/thread_pool"
 
 module Omnibus
   module FileSyncer
     extend self
-
-    def log
-      Omnibus.logger
-    end
-
-    def log_key
-      "FileSyncer"
-    end
 
     # Files to be ignored during a directory globbing
     IGNORED_FILES = %w{. ..}.freeze
@@ -125,9 +118,6 @@ module Omnibus
     # @return [true]
     #
     def sync(source, destination, options = {})
-      start_time = Time.now
-      log.info(log_key) { "Starting sync from '#{source}' to '#{destination}'" }
-
       unless File.directory?(source)
         raise ArgumentError, "`source' must be a directory, but was a " \
           "`#{File.ftype(source)}'! If you just want to sync a file, use " \
@@ -135,17 +125,12 @@ module Omnibus
       end
 
       # Collect source files
-      phase_start = Time.now
       source_files = all_files_under(source, options)
-      log.info(log_key) { "Collected #{source_files.size} source files in #{Time.now - phase_start}s" }
 
       # Clear any hardlink that we might have seen while syncing a previous directory
       # This can happen when generating 2 different packages in a row
       hardlink_sources.clear
 
-      # Build directory map
-      phase_start = Time.now
-      # Create all the needed directories in the destination with the right permissions
       # First gather all the directories and their permissions
       dir_mode_map = {}
       dir_mode_map[destination] = File.stat(source).mode
@@ -166,18 +151,11 @@ module Omnibus
           dir_mode_map[dest_dir] = File.stat(src_dir).mode
         end
       end
-      log.info(log_key) { "Built directory map with #{dir_mode_map.size} directories in #{Time.now - phase_start}s" }
 
-      # Create directories
-      phase_start = Time.now
       # Create directories sorted by depth (shallowest first) to ensure correct permissions
       dir_mode_map.sort_by { |path, _| path.count(File::SEPARATOR) }.each do |dest_dir, mode|
         FileUtils.mkdir_p(dest_dir, :mode => mode)
       end
-      log.info(log_key) { "Created #{dir_mode_map.size} directories in #{Time.now - phase_start}s" }
-
-      # Copy files and symlinks
-      phase_start = Time.now
 
       # Categorize files for processing
       regular_files = []
@@ -203,15 +181,11 @@ module Omnibus
         end
       end
 
-      log.info(log_key) { "Categorized #{regular_files.size} regular files, #{hardlinks.size} hardlinks, #{symlinks.size} symlinks" }
-
       # Process regular files and symlinks in parallel
-      require "omnibus/thread_pool"
       parallel_items = regular_files + symlinks
-      thread_count = [8, parallel_items.size].min  # Use up to 8 threads
+      thread_count = [8, parallel_items.size].min
 
       if parallel_items.any?
-        copy_start = Time.now
         ThreadPool.new(thread_count) do |pool|
           regular_files.each do |source_file|
             pool.schedule do
@@ -232,30 +206,23 @@ module Omnibus
             end
           end
         end
-        log.info(log_key) { "Copied #{regular_files.size} files and #{symlinks.size} symlinks in parallel (#{thread_count} threads) in #{Time.now - copy_start}s" }
       end
 
       # Process hardlinks serially (to maintain hardlink relationships)
-      if hardlinks.any?
-        hardlinks.each do |source_file, source_stat|
-          relative_path = relative_path_for(source_file, source)
-          if existing = hardlink_sources[[source_stat.dev, source_stat.ino]]
-            FileUtils.ln(existing, "#{destination}/#{relative_path}", force: true)
-          else
-            begin
-              FileUtils.cp(source_file, "#{destination}/#{relative_path}")
-            rescue Errno::EACCES
-              FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
-            end
-            hardlink_sources.store([source_stat.dev, source_stat.ino], "#{destination}/#{relative_path}")
+      hardlinks.each do |source_file, source_stat|
+        relative_path = relative_path_for(source_file, source)
+        if existing = hardlink_sources[[source_stat.dev, source_stat.ino]]
+          FileUtils.ln(existing, "#{destination}/#{relative_path}", force: true)
+        else
+          begin
+            FileUtils.cp(source_file, "#{destination}/#{relative_path}")
+          rescue Errno::EACCES
+            FileUtils.cp_r(source_file, "#{destination}/#{relative_path}", remove_destination: true)
           end
+          hardlink_sources.store([source_stat.dev, source_stat.ino], "#{destination}/#{relative_path}")
         end
       end
 
-      log.info(log_key) { "Copied #{regular_files.size} files, #{hardlinks.size} hardlinks, #{symlinks.size} symlinks in #{Time.now - phase_start}s" }
-
-      # Cleanup extra files
-      phase_start = Time.now
       # Remove any files in the destination that are not in the source files
       destination_files = glob("#{destination}/**/*")
 
@@ -274,9 +241,7 @@ module Omnibus
       extra_files.each do |file|
         FileUtils.rm_rf(File.join(destination, file))
       end
-      log.info(log_key) { "Removed #{extra_files.size} extra files in #{Time.now - phase_start}s" }
 
-      log.info(log_key) { "Sync completed in #{Time.now - start_time}s total" }
       true
     end
 
