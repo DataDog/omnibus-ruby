@@ -239,7 +239,7 @@ module Omnibus
         config_h = File.join(software.project_dir, "config.h")
         log.info(log_key) { "attempting to copy #{config_h}"}
         if File.exists? config_h
-          generated_path = File.join(Config.package_dir, "generated", software.name)
+          generated_path = File.join(Config.project_root, "pkg", "generated", software.name)
           log.info(log_key) { "Copying config.h to #{generated_path}" }
           FileUtils.mkdir_p(generated_path)
           FileUtils.cp(config_h, File.join(generated_path, "config.h"))
