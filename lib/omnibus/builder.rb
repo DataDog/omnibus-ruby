@@ -238,8 +238,11 @@ module Omnibus
       build_commands << BuildCommand.new("Copying config.h...") do
         if File.exists? "config.h"
           generated_path = File.join(Config.package_dir, "generated", software.name)
+          log.info(log_key) { "Copying config.h to #{generated_path}" }
           FileUtils.mkdir_p(generated_path)
           FileUtils.cp("config.h", File.join(generated_path, "config.h"))
+        else
+          log.info(log_key) { "config.h not found" }
         end
       end
     end
