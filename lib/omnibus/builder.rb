@@ -236,9 +236,11 @@ module Omnibus
       options[:in_msys_bash] = true
       command(configure_cmd, options)
       build_commands << BuildCommand.new("Copying config.h...") do
-        generated_path = File.join(Config.package_dir, "generated", software.name)
-        FileUtils.mkdir_p(generated_path)
-        FileUtils.cp("config.h", File.join(generated_path, "config.h"))
+        if File.exists? "config.h"
+          generated_path = File.join(Config.package_dir, "generated", software.name)
+          FileUtils.mkdir_p(generated_path)
+          FileUtils.cp("config.h", File.join(generated_path, "config.h"))
+        end
       end
     end
     expose :configure
