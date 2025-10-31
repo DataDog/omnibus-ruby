@@ -235,17 +235,21 @@ module Omnibus
 
       options[:in_msys_bash] = true
       command(configure_cmd, options)
+
       build_commands << BuildCommand.new("Copying config.h...") do
-        config_h = File.join(software.project_dir, "config.h")
-        log.info(log_key) { "attempting to copy #{config_h}"}
-        if File.exists? config_h
-          generated_path = File.join(Config.project_root, "pkg", "generated", software.name)
-          log.info(log_key) { "Copying config.h to #{generated_path}" }
-          FileUtils.mkdir_p(generated_path)
-          FileUtils.cp(config_h, File.join(generated_path, "config.h"))
-        else
-          log.info(log_key) { "config.h not found" }
+        candidates = ["config.h", File.join("include", "config.h")]
+        for c in candidates do
+          config_h = File.join(software.project_dir, c)
+          if File.exists? config_h
+            log.info(log_key) { "Found #{config_h}"}
+            generated_path = File.join(Config.project_root, "pkg", "generated", software.name)
+            log.info(log_key) { "Copying config.h to #{generated_path}" }
+            FileUtils.mkdir_p(generated_path)
+            FileUtils.cp(config_h, File.join(generated_path, "config.h"))
+            return
+          end
         end
+        log.info(log_key) { "config.h not found" }
       end
     end
     expose :configure
