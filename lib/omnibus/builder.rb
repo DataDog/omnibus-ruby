@@ -246,10 +246,8 @@ module Omnibus
             log.info(log_key) { "Copying config.h to #{generated_path}" }
             FileUtils.mkdir_p(generated_path)
             FileUtils.cp(config_h, File.join(generated_path, "config.h"))
-            return
           end
         end
-        log.info(log_key) { "config.h not found" }
       end
     end
     expose :configure
