@@ -237,7 +237,7 @@ module Omnibus
       command(configure_cmd, options)
 
       build_commands << BuildCommand.new("Copying config.h...") do
-        candidates = ["config.h", File.join("include", "config.h", "pyconfig.h")]
+        candidates = ["config.h", File.join("include", "config.h"), "pyconfig.h"]
         for c in candidates do
           config_h = File.join(software.project_dir, c)
           if File.exists? config_h
