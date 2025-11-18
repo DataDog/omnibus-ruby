@@ -237,7 +237,7 @@ module Omnibus
       command(configure_cmd, options)
 
       build_commands << BuildCommand.new("Copying config.h...") do
-        candidates = ["config.h", File.join("include", "config.h"), "pyconfig.h"]
+        candidates = ["config.h", File.join("include", "config.h"), "pyconfig.h", "libxml/xmlversion.h"]
         for c in candidates do
           config_h = File.join(software.project_dir, c)
           if File.exists? config_h
@@ -245,7 +245,7 @@ module Omnibus
             generated_path = File.join(Config.project_root, "pkg", "generated", software.name)
             log.info(log_key) { "Copying config.h to #{generated_path}" }
             FileUtils.mkdir_p(generated_path)
-            FileUtils.cp(config_h, File.join(generated_path, "config.h"))
+            FileUtils.cp(config_h, generated_path)
           end
         end
       end
