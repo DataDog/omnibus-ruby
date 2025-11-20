@@ -50,6 +50,7 @@ module Omnibus
       "windows" => [MSI, ZIP],
       "mac_os_x" => PKG,
       "macos" => PKG,
+      "ociru" => XZ,
     }.freeze
 
     #
