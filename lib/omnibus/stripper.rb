@@ -162,8 +162,28 @@ module Omnibus
         FileUtils.mkdir_p "#{executable_dir}" unless Dir.exist? "#{executable_dir}"
 
         log.debug(log_key) { "stripping #{source}, putting original file into #{target}" }
+        
+        # Capture file size and modification time before stripping
+        before_size = File.size(source)
+        before_mtime = File.mtime(source)
+        
         shellout!("cp #{source} #{target}")
         shellout!("strip --strip-debug --strip-unneeded #{source}")
+        
+        # Verify stripping actually worked
+        after_size = File.size(source)
+        after_mtime = File.mtime(source)
+        
+        if before_size == after_size
+          log.warn(log_key) { "WARNING: File size unchanged after stripping #{source} (#{before_size} bytes)" }
+        else
+          reduction_pct = ((before_size - after_size) / before_size.to_f * 100).round(2)
+          log.info(log_key) { "Stripped #{source}: #{before_size} -> #{after_size} bytes (#{reduction_pct}% reduction)" }
+        end
+        
+        if before_mtime == after_mtime
+          log.warn(log_key) { "WARNING: File modification time unchanged after stripping #{source}" }
+        end
       end
 
       #
