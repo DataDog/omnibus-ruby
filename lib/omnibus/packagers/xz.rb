@@ -29,8 +29,9 @@ module Omnibus
       out_file = windows_safe_path(Config.package_dir, package_name)
       input_paths = ["#{windows_safe_path(project.install_dir)}/*"] + project.extra_package_files
       compress_env = { "XZ_OPT" => "-T#{compression_threads} -#{compression_level}" }
+      # --sort=name improves reproducibility
       cmd = <<-EOH.split.join(" ").squeeze(" ").strip
-        tar -cJf
+        tar --sort=name -cJf
         #{out_file}
         #{input_paths.join(" ")}
       EOH
@@ -39,7 +40,7 @@ module Omnibus
       if debug_build?
         out_file = windows_safe_path(Config.package_dir, package_name(true))
         cmd = <<-EOH.split.join(" ").squeeze(" ").strip
-          tar -cJf
+          tar --sort=name -cJf
           #{out_file}
           #{debug_package_paths.map { |dir| File.join(install_dir, dir) }.join(' ')}
         EOH
