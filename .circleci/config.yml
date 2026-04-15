@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: cimg/ruby:2.5.9-browsers
+      - image: cimg/ruby:4.0.2-browsers
     steps:
       - checkout
 
