@@ -197,18 +197,31 @@ module Omnibus
     end
     expose :dd_wcssign
 
-    def dd_wcs_beta_channel(enabled = false)
-      if enabled
+    def dd_wcs_cert(val = NULL)
+      if val != NULL
         unless dd_wcssign
-          raise Error, "You must specify dd_wcssign with dd_wcs_beta_channel"
+          raise Error, "You must specify dd_wcssign with dd_wcs_cert"
         end
 
-        @dd_wcs_beta_channel = enabled
+        @dd_wcs_cert = val
       end
 
-      @dd_wcs_beta_channel
+      @dd_wcs_cert
     end
-    expose :dd_wcs_beta_channel
+    expose :dd_wcs_cert
+
+    def dd_wcs_config(val = NULL)
+      if val != NULL
+        unless dd_wcssign
+          raise Error, "You must specify dd_wcssign with dd_wcs_config"
+        end
+
+        @dd_wcs_config = val
+      end
+
+      @dd_wcs_config
+    end
+    expose :dd_wcs_config
 
     #
     # Iterates through available timestamp servers and tries to sign
@@ -256,10 +269,8 @@ module Omnibus
         cmd = Array.new.tap do |arr|
           arr << "dd-wcs"
           arr << "sign"
-          if dd_wcs_beta_channel
-            arr << "--cert s3://windows-code-signing-certificates/certs/beta/kms-signed.crt"
-            arr << "--config s3://windows-code-signing-certificates/certs/beta/config.json"
-          end
+          arr << "--cert #{dd_wcs_cert}" if dd_wcs_cert
+          arr << "--config #{dd_wcs_config}" if dd_wcs_config
           arr << "\"#{package_file}\""
         end.join(" ")
       elsif signing_identity
