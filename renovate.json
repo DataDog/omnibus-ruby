@@ -2,5 +2,12 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "minimumReleaseAge": "7 days",
-  "ignorePaths": [".gitlab-ci.yml"]
+  "internalChecksFilter": "strict",
+  "ignorePaths": [".gitlab-ci.yml"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ]
 }
