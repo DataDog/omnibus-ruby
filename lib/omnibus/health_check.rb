@@ -474,11 +474,11 @@ module Omnibus
       # $> otool -D ..../libddwaf.dylib
       # /opt/datadog-agent/embedded/lib/python3.11/site-packages/ddtrace/appsec/ddwaf/libddwaf/x86_64/lib/libddwaf.dylib:
       # @rpath/libddwaf.dylib
-      yield_shellout_results("otool -D #{lib}") do |line|
+      yield_shellout_results("otool -D -arch #{Ohai['kernel']['machine']} #{lib}") do |line|
         case line
         when /^(.+):$/
           # This is the name of the library we're inspecting, nothing to do here
-        when /^(.+).dylib$/
+        when /^(.+)\.(dylib|so)$/
           install_name = Regexp.last_match[0]
           return install_name
         end
