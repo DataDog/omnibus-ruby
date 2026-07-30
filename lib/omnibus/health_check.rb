@@ -137,20 +137,26 @@ module Omnibus
       /libgcc_s\.1\.dylib/,
       /CoreFoundation/,
       /Foundation/,
+      /CoreGraphics/,
       /CoreServices/,
+      /GSS/,
       /Tcl$/,
+      /OSLog/,
       /Cocoa$/,
       /Carbon$/,
       /IOKit$/,
       /Kerberos/,
       /Tk$/,
-      /libutil\.dylib/,
-      /libffi\.dylib/,
-      /libncurses\.5\.4\.dylib/,
-      /libiconv/,
-      /libstdc\+\+\.6\.dylib/,
       /libc\+\+\.1\.dylib/,
       /libc\+\+abi\.dylib/,
+      /libedit(\.[23])?\.dylib/,
+      /libffi\.dylib/,
+      /libiconv/,
+      /libncurses\.5\.4\.dylib/,
+      /libpanel\.5\.4\.dylib/,
+      /libpcap\.A\.dylib/,
+      /libstdc\+\+\.6\.dylib/,
+      /libutil\.dylib/,
       /libzstd\.1\.dylib/,
       /Security/,
       /SystemConfiguration/,
@@ -468,11 +474,11 @@ module Omnibus
       # $> otool -D ..../libddwaf.dylib
       # /opt/datadog-agent/embedded/lib/python3.11/site-packages/ddtrace/appsec/ddwaf/libddwaf/x86_64/lib/libddwaf.dylib:
       # @rpath/libddwaf.dylib
-      yield_shellout_results("otool -D #{lib}") do |line|
+      yield_shellout_results("otool -D -arch #{Ohai['kernel']['machine']} #{lib}") do |line|
         case line
         when /^(.+):$/
           # This is the name of the library we're inspecting, nothing to do here
-        when /^(.+).dylib$/
+        when /^(.+)\.(dylib|so)$/
           install_name = Regexp.last_match[0]
           return install_name
         end
@@ -491,7 +497,9 @@ module Omnibus
       bad_libs = {}
       install_name = nil
 
-      yield_shellout_results("find #{project.install_dir} -type f | egrep '\.(dylib|bundle)$' | xargs otool -L") do |line|
+      # Collect info from all binaries (based on mime-type), try to do so efficiently
+      # `grep -v (` is meant to skip architecture-specific entries
+      yield_shellout_results("find #{project.install_dir} -type f -print0 | xargs -0 -n1000 -P4 file -n --mime-type \{\} \+ | grep application/x-mach-binary | grep -v '(' | cut -d':' -f 1 | xargs otool -L -arch #{Ohai['kernel']['machine']}") do |line|
         case line
         when /^(.+):$/
           current_library = Regexp.last_match[1]
