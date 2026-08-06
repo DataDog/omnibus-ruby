@@ -37,6 +37,27 @@ module Omnibus
       destination = File.join(staging_dir, project.install_dir)
       FileSyncer.sync(project.install_dir, destination, exclude: exclusions)
 
+      # Copy over any user-specified extra package files.
+      #
+      # Files retain their relative paths inside the scratch directory, so
+      # we need to grab the dirname of the file, create that directory, and
+      # then copy the file into that directory.
+      #
+      # extra_package_file '/path/to/foo.txt' #=> /tmp/BUILD/path/to/foo.txt
+      project.extra_package_files.each do |file|
+        parent      = File.dirname(file)
+
+        if File.directory?(file)
+          destination = File.join("#{staging_dir}", file)
+          create_directory(destination)
+          FileSyncer.sync(file, destination)
+        else
+          destination = File.join("#{staging_dir}", parent)
+          create_directory(destination)
+          copy_file(file, destination)
+        end
+      end
+
       # Create the scripts staging directory
       create_directory(scripts_staging_dir)
     end
