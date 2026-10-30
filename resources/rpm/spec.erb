@@ -48,9 +48,8 @@ Conflicts: <%= name %>
 <% replaces.each do |name| -%>
 Obsoletes: <%= name %>
 <%- end -%>
-<% # RPM rejects descriptions with blank lines (even between content) -%>
 %description
-<%= description.gsub(/^\s*$/, " .") %>
+<%= description %>
 
 %prep
 # noop
