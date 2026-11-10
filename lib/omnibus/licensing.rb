@@ -451,6 +451,7 @@ module Omnibus
     # @return [String]
     #
     def license_package_location(component_name, where)
+      where = URI::Parser.new.escape(where)
       if local?(where)
         File.join(output_dir, "#{component_name}-#{File.split(where).last}")
       else
@@ -796,6 +797,7 @@ EOH
       "Watcom-1.0" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/Watcom-1.0",       # Sybase Open Watcom Public License 1.0
       "NCSA" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/NCSA",                   # University of Illinois/NCSA Open Source License
       "UPL" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/UPL",                     # Universal Permissive License
+      "UPL-1.0" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/UPL",                 # Universal Permissive License (correct SPDX ID)
       "VSL-1.0" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/VSL-1.0",             # Vovida Software License v. 1.0
       "W3C" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/W3C",                     # W3C License
       "WXwindows" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/WXwindows",         # wxWindows Library License
@@ -808,6 +810,7 @@ EOH
       # are frequently used in our depedencies.
       #
       "Public-Domain" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/Public-Domain",
+      "Public Domain" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/Public-Domain",
       "Ruby" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/Ruby",
       "Erlang-Public" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/Erlang-Public",
       "Oracle-Binary" => "https://dd-agent-omnibus.s3.amazonaws.com/licenses/Oracle-Binary",
