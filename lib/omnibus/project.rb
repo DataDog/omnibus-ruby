@@ -1481,7 +1481,7 @@ module Omnibus
     end
 
     def write_build_summary
-      out_path = "#{Config.project_root}/pkg/build-summary.json"
+      out_path = "#{Config.package_dir}/build-summary.json"
       log.info(log_key) { "Writing build summary to #{out_path}" }
       File.open(out_path, "w") do |f|
         f.write(FFI_Yajl::Encoder.encode(build_summary.to_hash, pretty: true))
