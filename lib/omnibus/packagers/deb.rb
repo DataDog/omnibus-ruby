@@ -44,11 +44,11 @@ module Omnibus
 
         if File.directory?(file)
           destination = File.join(staging_dir, file)
-          create_directory(destination)
+          create_directory(destination, mode: 0755)
           FileSyncer.sync(file, destination)
         else
           destination = File.join(staging_dir, parent)
-          create_directory(destination)
+          create_directory(destination, mode: 0755)
           copy_file(file, destination)
         end
       end
