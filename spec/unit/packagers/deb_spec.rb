@@ -30,6 +30,40 @@ module Omnibus
       create_directory("#{staging_dir}/DEBIAN")
     end
 
+    describe "setup" do
+      let(:install_dir) { File.join(tmp_path, "opt/project") }
+      let(:extra_dir)   { File.join(tmp_path, "extra/etc/project") }
+      let(:extra_file)  { File.join(tmp_path, "extra/usr/bin/project") }
+
+      before do
+        project.install_dir(install_dir)
+        create_directory(install_dir)
+        create_directory(extra_dir)
+        File.chmod(0775, extra_dir)
+        create_file(extra_file)
+        project.extra_package_file(extra_dir)
+        project.extra_package_file(extra_file)
+      end
+
+      it "creates extra package file directories with mode 0755" do
+        old_umask = File.umask(0002)
+        begin
+          subject.instance_eval(&described_class.setup)
+        ensure
+          File.umask(old_umask)
+        end
+
+        [
+          File.dirname(extra_dir),
+          extra_dir,
+          File.dirname(File.dirname(extra_file)),
+          File.dirname(extra_file),
+        ].each do |dir|
+          expect(File.stat(File.join(staging_dir, dir)).mode & 07777).to eq(0755), dir
+        end
+      end
+    end
+
     describe '#vendor' do
       it "is a DSL method" do
         expect(subject).to have_exposed_method(:vendor)

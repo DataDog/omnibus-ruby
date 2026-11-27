@@ -175,10 +175,10 @@ module Omnibus
     # @return [String]
     #   the path to the created directory
     #
-    def create_directory(*paths)
+    def create_directory(*paths, mode: nil)
       path = File.join(*paths)
       log.debug(log_key) { "Creating directory `#{path}'" }
-      FileUtils.mkdir_p(path)
+      FileUtils.mkdir_p(path, mode: mode)
       path
     end
 

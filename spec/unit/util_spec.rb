@@ -97,8 +97,13 @@ module Omnibus
       before { allow(FileUtils).to receive(:mkdir_p) }
 
       it "creates the directory" do
-        expect(FileUtils).to receive(:mkdir_p).with("/foo/bar")
+        expect(FileUtils).to receive(:mkdir_p).with("/foo/bar", mode: nil)
         subject.create_directory("/foo/bar")
+      end
+
+      it "passes the mode" do
+        expect(FileUtils).to receive(:mkdir_p).with("/foo/bar", mode: 0755)
+        subject.create_directory("/foo/bar", mode: 0755)
       end
 
       it "returns the path" do
